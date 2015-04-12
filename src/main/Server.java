@@ -1,6 +1,6 @@
 package main;
 
-import java.net.Socket;
+import java.io.IOException;
 
 /**
  * The Server class takes connection requests from multiple Clients over TCP
@@ -18,15 +18,20 @@ public interface Server {
      * Initialise the main ServerSocket on a specified port and start listening for connections.
      * For each accepted connection a communication stream should be opened via openStream(Socket) method.
      * The Server should concentrate on listening new connections and leave their handling to other threads.
+     *
+     * @throws java.io.IOException
      */
-    public void init();
+    public void init() throws IOException;
+
+    public void init(int port) throws IOException;
 
     /**
-     * Open a communication stream with each Client and send it to another thread for further handling.
-     * // TODO thread pool UDP class: this method should send the connection details to that class.
+     * Open a communication stream with a Client socket (wrapped in a {@see SocketStream})
+     * and send a message through it.
      */
-    public void openStream(Socket socket);
+    public String sendString(SocketStream sock, String message) throws IOException ;
 
+    // TODO thread pool UDP class and here a method to send the connection details to that class (and to the Client)
 
 
 }
