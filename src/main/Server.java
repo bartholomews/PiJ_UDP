@@ -27,9 +27,9 @@ public interface Server {
 
     /**
      * Open a communication stream with a Client socket (wrapped in a {@see SocketStream})
-     * and send a message through it.
+     * and send a String message through it.
      */
-    public String sendString(SocketStream sock, String message) throws IOException ;
+    public boolean sendString(SocketStream sock, String message) throws IOException;
 
     // TODO thread pool UDP class and here a method to send the connection details to that class (and to the Client)
 
