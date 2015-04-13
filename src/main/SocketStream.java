@@ -10,22 +10,24 @@ import java.net.Socket;
  * to read and write to that socket. It can be implemented for production code to be used with
  * a BufferedReader/InputStreamReader and with a PrintWriter, and in unit testing to create a mock
  * implementation with a dummy socket and some byte[] testing data.
+ *
+ * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public interface SocketStream {
 
     /**
      * Creates an InputStream on the underlying socket.
      *
-     * @return an InputStream that read from the Socket specified with the constructor.
-     * @throws IOException
+     * @return an InputStream connected to the Socket specified with the constructor.
+     * @throws IOException if a problem is encountered during the connection.
      */
     public InputStream in() throws IOException;
 
     /**
      * Creates an OutputStream on the underlying socket.
      *
-     * @return an OutputStream that writes to the Socket specified with the constructor.
-     * @throws IOException
+     * @return an OutputStream connected to the Socket specified with the constructor.
+     * @throws IOException if a problem is encountered during the connection.
      */
     public OutputStream out() throws IOException;
 
