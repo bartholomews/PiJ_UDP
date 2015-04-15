@@ -16,9 +16,10 @@ import java.net.Socket;
  */
 public interface Server {
     /**
-     * Initialise the main ServerSocket on a fixed port and start listening for connections.
-     * For each accepted connection a communication stream should be opened via openStream(Socket) method.
-     * The Server should concentrate on listening new connections and leave their handling to other threads.
+     * Initialise the main ServerSocket on a fixed port and start listening for connections via method
+     * listen(ServerSocket). For each accepted connection a communication stream should be opened
+     * via openStream(Socket) method. The Server should concentrate on listening new connections and leave
+     * their handling to other threads.
      *
      * @throws IOException for a communication error.
      */
@@ -26,7 +27,7 @@ public interface Server {
 
     /**
      * Initialise the main ServerSocket on a port selected as parameter, and start listening for connections.
-     * For each accepted connection a communication stream should be opened via openStream(Socket) method.
+     * For each accepted connection the Server should acknowledge it.
      * The Server should concentrate on listening new connections and leave their handling to other threads.
      *
      * @param port the port to connect to.
@@ -35,14 +36,14 @@ public interface Server {
     public void init(int port) throws IOException;
 
     /**
-     * Writes out a String message to a Client socket (wrapped inside a {@see SocketStream}).
+     * Writes out a String message to a Client socket.
      *
-     * @param sock the SocketStream wrapping an InputStream/OutputStream that reads/writes to the Client socket.
-     * @param message the String message to be sent via the SocketStream.
-     * @return true after the Stream is flushed.
+     * @param socket the socket connected with the Client.
+     * @param message the String message to be sent via the socket.
+     * @return true after the stream is flushed.
      * @throws IOException for a communication error.
      */
-    public boolean sendString(SocketStream sock, String message) throws IOException;
+    public boolean sendString(Socket socket, String message) throws IOException;
 
     public boolean handleRequest(Socket socket);
 

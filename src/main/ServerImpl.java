@@ -8,6 +8,7 @@ import java.net.Socket;
 
 /**
  * Implementation of interface {@see Server}
+ * The program runs in an infinite loop, so it should be closed manually from whathever prompt (e.g. crtl-c)
  *
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
@@ -37,10 +38,9 @@ public class ServerImpl implements Server {
     public void init(int port) throws IOException {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             while(true) {
+                Socket sock = serverSocket.accept();
                 System.out.println("Listening on port " + port + "...");
-                Socket socket = serverSocket.accept();
-                SocketStream sock = new SocketStreamImpl(socket);
-                sendString(sock, "Connection established with: " + socket.getRemoteSocketAddress());
+                sendString(sock, "Connection established with: " + sock.getRemoteSocketAddress());
                 // handleRequest(socket);
             }
         }
@@ -49,14 +49,14 @@ public class ServerImpl implements Server {
     /**
      * {@inheritDoc}
      *
-     * @param sock the SocketStream wrapping an OutputStream that writes to the Client socket.
-     * @param message the String message to be sent via the SocketStream.
-     * @return true after the Stream is flushed.
+     * @param socket the socket connected with the Client.
+     * @param message the String message to be sent via the socket.
+     * @return true after the stream is flushed.
      * @throws IOException for a communication error.
      */
     @Override
-    public boolean sendString(SocketStream sock, String message) throws IOException {
-        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(sock.out()))) {
+    public boolean sendString(Socket socket, String message) throws IOException {
+        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()))) {
             System.out.println(message);
             out.print(message);
             out.flush();
