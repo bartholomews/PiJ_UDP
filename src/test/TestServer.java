@@ -1,23 +1,27 @@
 package test;
 
-import main.*;
+import main.Server;
+import main.ServerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
  */
 public class TestServer {
-    private String MESSAGE = "Connection test message";
+    private final String MESSAGE = "Connection test message";
     private Server server;
 
     @Before
@@ -33,37 +37,52 @@ public class TestServer {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    /**
+     * A mock of Socket.class with an OutputStream opened on it to write data to.
+     *
+     * @return a valid socket's mock
+     * @throws IOException
+     */
+    public Socket getSocketMock() throws IOException {
+        Socket mock = mock(Socket.class);
+        when(mock.getOutputStream()).thenReturn(new ByteArrayOutputStream());
+        return mock;
+    }
+
+    /**
+     * A mock of Socket.class which throws an IOException during the getOutputStream(),
+     * simulating an error during writing out to stream.
+     *
+     * @return a failing socket's mock
+     * @throws IOException
+     */
+    public Socket getFailingSocketMock() throws IOException {
+        Socket mock = mock(Socket.class);
+        when(mock.getOutputStream()).thenThrow(new IOException());
+        return mock;
+    }
+
     @Test
     public void testServerUsingRealSocketStreamNotConnectedShouldThrowIOException() throws IOException {
         exception.expect(IOException.class);
-        SocketStream notConnected = new SocketStreamImpl(new Socket());
+        Socket notConnected = new Socket();
         server.sendString(notConnected, MESSAGE);
     }
 
     @Test
-    public void testServerUsingIOExceptionSocketStreamShouldThrowAnIOExceptionWhileWritingOut() throws IOException {
+    public void testIOExceptionDuringGetOutputStreamShouldThrowItWhileWritingOut() throws IOException {
         exception.expect(IOException.class);
-        // a byte[] of data for the SocketStreamMock constructor (it won't be used here)
-        byte[] data = "Not_used_as_here_I'm_testing_OutputStream".getBytes();
-        // a SocketStream which throws an IOException while its socket tries to get the outputStream
-        SocketStream failing = new SocketStreamError(data);
+        Socket failing = getFailingSocketMock();
         server.sendString(failing, MESSAGE);
     }
 
     @Test
-    public void testServerUsingMockSocketStreamShouldWriteOutAStringMessage() throws IOException {
-        // a byte[] of data for the SocketStreamMock constructor (it won't be used here)
-        byte[] data = "Not_used_as_here_I'm_testing_OutputStream".getBytes();
-        // a SocketStream mock to be used as OutputStream socket by the Server
-        SocketStreamMock mock = new SocketStreamMock(data);
-        assertTrue("Server wrote out on the socket mock", server.sendString(mock, MESSAGE));
-        // get the byte[] in the socket outputStream
-        byte[] outputSocket = mock.getOutput();
-        // compare the bytes wrote out by the server to the socket with the outputStream of the socket
-        assertArrayEquals(MESSAGE.getBytes(), outputSocket);
+    public void testValidSocketShouldWriteOutStringMessageCompareContent() throws IOException {
+        Socket mock = mock(Socket.class);
+        when(mock.getOutputStream()).thenReturn(new ByteArrayOutputStream());
+        assertTrue(server.sendString(mock, MESSAGE));
+        byte[] data = ((ByteArrayOutputStream) mock.getOutputStream()).toByteArray();
+        assertArrayEquals(MESSAGE.getBytes(), data);
     }
-
-
-
 
 }
