@@ -1,7 +1,6 @@
 package main;
 
 import java.io.IOException;
-import java.net.Socket;
 
 /**
  * The Server class takes connection requests from multiple Clients over TCP
@@ -16,10 +15,8 @@ import java.net.Socket;
  */
 public interface Server {
     /**
-     * Initialise the main ServerSocket on a fixed port and start listening for connections via method
-     * listen(ServerSocket). For each accepted connection a communication stream should be opened
-     * via openStream(Socket) method. The Server should concentrate on listening new connections and leave
-     * their handling to other threads.
+     * Initialise the main ServerSocket on a fixed port and start listening for connections.
+     * The Server should concentrate on listening new connections and leave their handling to other threads.
      *
      * @throws IOException for a communication error.
      */
@@ -27,25 +24,12 @@ public interface Server {
 
     /**
      * Initialise the main ServerSocket on a port selected as parameter, and start listening for connections.
-     * For each accepted connection the Server should acknowledge it.
      * The Server should concentrate on listening new connections and leave their handling to other threads.
      *
      * @param port the port to connect to.
      * @throws IOException for a communication error.
      */
     public void init(int port) throws IOException;
-
-    /**
-     * Writes out a String message to a Client socket.
-     *
-     * @param socket the socket connected with the Client.
-     * @param message the String message to be sent via the socket.
-     * @return true after the stream is flushed.
-     * @throws IOException for a communication error.
-     */
-    public boolean sendString(Socket socket, String message) throws IOException;
-
-    public boolean handleRequest(Socket socket);
 
     // TODO thread pool UDP class and here a method to send the connection details to that class (and to the Client)
 
