@@ -23,10 +23,30 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
         try {
             String message = "Connection " + connection.getID() + " established with " + connection.getSocket().getRemoteSocketAddress();
             sendString(message);
-            getRequest();
+            Request request = getRequest();
+
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param request the request from the Client
+     * @throws IOException for an error during communication
+     */
+    @Override
+    public void sendRequest(Request request) throws IOException {
+        String toSend = "";
+        if(request == Request.ID) {
+            toSend = connection.getID();
+        } else if(request == Request.CLIENT_STATUS) {
+            toSend = connection.getStatus();
+        } else {
+            throw new IOException("Invalid request: " + request.toString());
+        }
+        sendString(toSend);
     }
 
     /**

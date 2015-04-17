@@ -35,6 +35,14 @@ public interface WorkerThread extends Runnable {
     public Request getRequest() throws IOException;
 
     /**
+     * Reply to a Client {@see Request} with a String (i.e. an ID or CLIENT_STATUS)
+     *
+     * @param request the request from the Client
+     * @throws IOException for an error during communication
+     */
+    public void sendRequest(Request request) throws IOException;
+
+    /**
      * Returns the {@see Connection} the thread is working with.
      *
      * @return the connection assigned to the thread.
