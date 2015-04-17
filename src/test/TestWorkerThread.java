@@ -58,6 +58,14 @@ public class TestWorkerThread {
     }
 
     @Test
+    public void testValidSocketInvalidRequestShouldThrowIllegalArgumentException() throws IOException {
+        exception.expect(IllegalArgumentException.class);
+        String invalid = "Not a valid request";
+        WorkerThread test = new WorkerThreadImpl(getConnectionMock(invalid, ClientStatus.RECEIVER));
+        test.getRequest();
+    }
+
+    @Test
     public void testValidSocketShouldSendAStringToTheClientCompareValues() throws IOException {
         // a new thread with a mock connection (with not important parameters, as I'm testing outputStream here)
         WorkerThread test = new WorkerThreadImpl(getConnectionMock(MESSAGE, ClientStatus.SENDER));
