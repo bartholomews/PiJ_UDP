@@ -4,7 +4,7 @@ import java.net.Socket;
 
 /**
  * A Connection is a Client-end socket associated with an unique ID given by the Server which is connected to,
- * and a boolean value which tells whether it is the first Client to be connected or not.
+ * and a constant of enum class {@see ClientStatus} which tells whether it is the first Client to be connected or not.
  *
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
@@ -25,17 +25,21 @@ public interface Connection {
     public String getID();
 
     /**
-     * Boolean flag to check whether the Connection is the "oldest" in communication with the Server.
+     * Get info about whether the Connection is the "oldest" in communication with the Server.
+     * Will return SENDER Client status if it is the first (i.e. "sender") active client connected
+     * with the server, RECEIVER status otherwise. Both constants refer to the enum class {@see ClientStatus}
+     * and are converted to String to be communicated via the network.
      *
-     * @return true if it is the first (i.e. "sender") active Client connected with the Server, false otherwise
+     * @return a SENDER Client status converted to String if it is the first (i.e. "sender") active Client
+     * connected with the Server, a RECEIVER status converted to String otherwise.
      */
-    public boolean isSender();
+    public String getStatus();
 
     /**
-     * Change the state of isSender the boolean flag. This might happen when the first Connection disconnects,
-     * and the second one is promoted to sender_status.
+     * Change the client status. This might happen when the first Connection disconnects,
+     * and the second one is promoted to SENDER.
      *
-     * @param isSender the new flag status of the Client connection, true if "sender", false if "receiver"
+     * @param status the new constant status of the Client connection, true if "sender", false if "receiver"
      */
-    public void setStatus(boolean isSender);
+    public void setStatus(ClientStatus status);
 }
