@@ -5,86 +5,25 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static test.SocketMocks.*;
 
 /**
- *
+ * JUnit tests for {@see WorkerThreadImpl} methods. Sockets and Connections mocks are retrieved from static methods
+ * in {@see Mocks} class.
  */
 public class TestWorkerThread {
     // a valid String message to be used for testing
     private final String MESSAGE = "Connection test " + "message";
-    // a valid UUID to String to be used for testing
-    private final String ID = "3fb4fa6e-2899-4429-b818-d34fe8df5dd0";
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    /**
-     * A mock of Socket.class with an OutputStream opened on it to write data to,
-     * and an InputStream which pretends to read data but in reality is reading
-     * the byte[] set at construction time.
-     *
-     * @return a valid socket's mock
-     * @throws IOException
-     */
-    public Socket getSocketMock(byte[] data) throws IOException {
-        Socket mock = mock(Socket.class);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        when(mock.getOutputStream()).thenReturn(baos);
-        when(mock.getInputStream()).thenReturn(new ByteArrayInputStream(data));
-        when(mock.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("some IP address", 2046));
-        return mock;
-    }
-
-    /**
-     * A mock of Socket.class which throws an IOException, simulating an error during reading/writing.
-     *
-     * @return a failing socket's mock
-     * @throws IOException
-     */
-    public Socket getFailingSocketMock() throws IOException {
-        Socket mock = mock(Socket.class);
-        when(mock.getOutputStream()).thenThrow(new IOException());
-        when(mock.getInputStream()).thenThrow(new IOException());
-        return mock;
-    }
-
-    /**
-     * A mock of Connection.class which wraps a Socket mock with an inputStream containing the data set
-     * as parameter, an ID and a the boolean status flag set as parameter.
-     *
-     * @param message a String converted to byte[] and placed into the underlying Socket mock inputStream.
-     * @param status the client_status
-     * @return the Connection mock just created
-     * @throws IOException
-     */
-    public Connection getConnectionMock(String message, ClientStatus status) throws IOException {
-        byte[] data = message.getBytes();
-        UUID id = UUID.fromString(ID);
-        return new ConnectionImpl(getSocketMock(data), id, status);
-    }
-
-    /**
-     * A mock of Connection.class which throws an IOException, having a failing Socket mock as underlying socket.
-     *
-     * @param status the client_status
-     * @return a Connection ready to throw an IOException
-     * @throws IOException
-     */
-    public Connection getFailingConnectionMock(ClientStatus status) throws IOException {
-        UUID id = UUID.randomUUID();
-        return new ConnectionImpl(getFailingSocketMock(), id, status);
-    }
 
     @Test
     public void testUsingRealSocketStreamNotConnectedShouldThrowIOException() throws IOException {
@@ -147,7 +86,7 @@ public class TestWorkerThread {
         // and convert it back to byte[]
         byte[] sent = ((ByteArrayOutputStream) out).toByteArray();
         // the String which should have been sent
-        String stringToBeSent = ClientStatus.RECEIVER.toString();
+        String stringToBeSent = ClientStatus.RECEIVER.name();
         // converted to byte[]
         byte[] bytesToBeSent = (stringToBeSent + "\n").getBytes();
         // the two byte[] should be equal
@@ -165,7 +104,7 @@ public class TestWorkerThread {
         // and convert it back to byte[]
         byte[] sent = ((ByteArrayOutputStream) out).toByteArray();
         // the String which should have been sent
-        String stringToBeSent = ID;
+        String stringToBeSent = getTestID();
         // converted to byte[]
         byte[] bytesToBeSent = (stringToBeSent + "\n").getBytes();
         // the two byte[] should be equal
