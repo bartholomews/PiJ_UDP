@@ -26,27 +26,31 @@ public interface Client {
 
     /**
      * Submit a request to the Server via the connected socket.
-     * This should be used to request an unique ID number and whether it is the first Client to connect or not
+     * This should be used to request an unique ID number
+     * and whether it is the first Client to connect or not
      *
-     * @param socket the Client socket opened with the Server.
-     * @param request the Client request to be sent to the Server.
-     * @return true once the request has been submitted.
-     * @throws java.io.IOException for a communication error with the Server.
+     * @param socket the socket connected with the Server
+     * @param request the Client request to be sent to the Server
+     * @throws IOException for an error during connection
+     * @throws NullPointerException for a null Request
      */
-    public boolean sendRequest(Socket socket, Request request) throws IOException;
-
-    public String getString(Socket socket) throws IOException;
+    public void sendRequest(Socket socket, Request request) throws IOException;
 
     /**
-     * Collect the result of the query to the Server (the ID number and the sender/receiver status)
-     * TODO This information could be wrapped (together with the socket) in a Connection class
-     * to be passed to the UDP sendAudio() or receiveAudio() routines.
      *
-     * @return a Connection which wraps the socket and the information retrieved from the Server.
+     *
+     * @param socket
+     * @return
+     * @throws IOException
      */
-    public Connection getInfo();
+    public ClientStatus getStatus(Socket socket) throws IOException;
 
-    // TODO UDPMethods()
-
+    /**
+     *
+     *
+     * @param socket
+     * @return
+     */
+    public String getID(Socket socket) throws IOException;
 
 }
