@@ -54,7 +54,7 @@ public class ConnectionImpl implements Connection {
      */
     @Override
     public String getStatus() {
-        return status.toString();
+        return status.name();
     }
 
     /**
