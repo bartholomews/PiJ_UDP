@@ -21,10 +21,10 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
     @Override
     public void run() {
         try {
-            String message = "Connection " + connection.getID() + " established with " + connection.getSocket().getRemoteSocketAddress();
+            String message = "Connection established with " + connection.getSocket().getRemoteSocketAddress();
+            message += "\n + Listening for requests...";
             sendString(message);
-            Request request = getRequest();
-
+            sendRequest(getRequest());
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -50,6 +50,46 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
     }
 
     /**
+     * Listen to requests
+     *
+     * @throws IOException
+     */
+    public Request getRequest() throws IOException {
+        Request request = null;
+        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getSocket().getInputStream()));
+        String line = in.readLine();
+        boolean received = false;
+        do {
+            if (line == null) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
+                    // do nothing
+                }
+            } else {
+                received = true;
+                try {
+                    request = Request.valueOf(line);
+                    System.out.println(request.toString() + " request from " + connection.getSocket().getRemoteSocketAddress());
+                } catch (IllegalArgumentException ex) {
+                    throw new IllegalArgumentException("\"" + line + "\": invalid Request");
+                }
+            }
+        } while (!received);
+        return request;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return the connection assigned to the thread.
+     */
+    @Override
+    public Connection getConnection() {
+        return connection;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @param toSend the String message to be sent via the socket.
@@ -68,36 +108,6 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
             System.out.println("Error");
             throw new IOException();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return the request received.
-     * @throws IOException for an error during communication.
-     */
-    @Override
-    public Request getRequest() {
-        try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getSocket().getInputStream()));
-            String received = in.readLine();
-            Request request = Request.valueOf(received);
-            System.out.println(request.toString() + " request from " + connection.getSocket().getRemoteSocketAddress());
-            return request;
-        } catch (IOException ex) {
-            System.out.println("Error");
-            return null;    // TODO ???
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return the connection assigned to the thread.
-     */
-    @Override
-    public Connection getConnection() {
-        return connection;
     }
 
 }
