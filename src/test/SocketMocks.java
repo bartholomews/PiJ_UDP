@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
  */
 public class SocketMocks {
     // a valid UUID to String to be used for testing
-    private static final String ID = "3fb4fa6e-2899-4429-b818-d34fe8df5dd0";
+    static final String ID = "3fb4fa6e-2899-4429-b818-d34fe8df5dd0";
 
     /**
      * Return the UUID test id number
@@ -72,6 +72,7 @@ public class SocketMocks {
      */
     public static Connection getConnectionMock(String message, ClientStatus status) throws IOException {
         byte[] data = message.getBytes();
+        // just to check that the UUID is valid
         UUID id = UUID.fromString(ID);
         return new ConnectionImpl(getSocketMock(data), id, status);
     }
