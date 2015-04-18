@@ -37,19 +37,31 @@ public interface Client {
     public void sendRequest(Socket socket, Request request) throws IOException;
 
     /**
+     * Get a String from the inputStream opened on the socket connected with the Server.
      *
+     * @param socket the socket connected with the Server.
+     * @return the String read from the InputStream.
+     * @throws IOException for an error during connection or if a null String is received.
+     */
+    public String getString(Socket socket) throws IOException;
+
+    /**
+     * Get the current client_status, either SENDER or RECEIVER.
      *
-     * @param socket
-     * @return
-     * @throws IOException
+     * @param socket the socket connected with the Server
+     * @return the current status flag of the client
+     * @throws IOException for a communication error
+     * @throws IllegalArgumentException if an invalid ClientStatus is received
      */
     public ClientStatus getStatus(Socket socket) throws IOException;
 
     /**
+     * Get the unique-id assigned by the Server.
      *
-     *
-     * @param socket
-     * @return
+     * @param socket the socket connected with the Server
+     * @return a String with the unique ID requested
+     * @throws IOException for a communication error
+     * @throws IllegalArgumentException if an invalid UUID is received
      */
     public String getID(Socket socket) throws IOException;
 
