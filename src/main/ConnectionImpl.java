@@ -60,6 +60,16 @@ public class ConnectionImpl implements Connection {
     /**
      * {@inheritDoc}
      *
+     * @return true if the connection client_status is set to SENDER, false otherwise
+     */
+    @Override
+    public boolean isSender() {
+        return ClientStatus.valueOf(getStatus()).equals(ClientStatus.SENDER);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @param status the new constant status of the Client connection, SENDER or RECEIVER
      */
     @Override
@@ -68,4 +78,6 @@ public class ConnectionImpl implements Connection {
     }
 
 
+
 }
+

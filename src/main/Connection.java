@@ -36,6 +36,14 @@ public interface Connection {
     public String getStatus();
 
     /**
+     * Boolean flag which returns true if the connection client_status is currently set to SENDER,
+     * false otherwise.
+     *
+     * @return true if the connection client_status is set to SENDER, false otherwise
+     */
+    public boolean isSender();
+
+    /**
      * Change the client status. This might happen when the first Connection disconnects,
      * and the second one is promoted to SENDER.
      *
