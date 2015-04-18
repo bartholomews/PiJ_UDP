@@ -50,10 +50,13 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
     }
 
     /**
-     * Listen to requests
+     * {@inheritDoc}
      *
-     * @throws IOException
+     * @return the request received
+     * @throws IOException for a communication error
+     * @throws IllegalArgumentException if the String is not a value of a valid {@see Request}
      */
+    @Override
     public Request getRequest() throws IOException {
         Request request = null;
         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getSocket().getInputStream()));
@@ -68,12 +71,8 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
                 }
             } else {
                 received = true;
-                try {
-                    request = Request.valueOf(line);
-                    System.out.println(request.toString() + " request from " + connection.getSocket().getRemoteSocketAddress());
-                } catch (IllegalArgumentException ex) {
-                    throw new IllegalArgumentException("\"" + line + "\": invalid Request");
-                }
+                request = Request.valueOf(line);
+                System.out.println(request.toString() + " request from " + connection.getSocket().getRemoteSocketAddress());
             }
         } while (!received);
         return request;

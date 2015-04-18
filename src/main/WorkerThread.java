@@ -29,8 +29,9 @@ public interface WorkerThread extends Runnable {
     /**
      * Reads a {@see Request} from a Client.
      *
-     * @return the request received.
-     * @throws IOException for an error during communication.
+     * @return the request received
+     * @throws IOException for a communication error
+     * @throws IllegalArgumentException if the String is not a value of a valid {@see Request}
      */
     public Request getRequest() throws IOException;
 
