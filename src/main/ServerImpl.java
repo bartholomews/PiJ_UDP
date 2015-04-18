@@ -11,7 +11,11 @@ import java.net.Socket;
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public class ServerImpl implements Server {
- //   private ThreadsPool pool; TODO
+    private ThreadsPool pool;// TODO
+
+    public ServerImpl() {
+        pool = new ThreadsPoolImpl(10);
+    }
 
     /**
      * Start the Server at port 2046 and start listening for connections.
@@ -39,7 +43,7 @@ public class ServerImpl implements Server {
             while(true) {
                 System.out.println("Listening on port " + port + "...");
                 Socket sock = serverSocket.accept();
-         //       pool.submit(sock); TODO
+                pool.submit(sock); //TODO
             }
         }
     }
