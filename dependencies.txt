@@ -1,0 +1,8 @@
+
+Name: jUnit
+Location: http://junit.org/
+Version: junit-4.11
+
+Name: mockito
+Location: https://code.google.com/p/mockito/
+Version: mockito-all-1.9.5
