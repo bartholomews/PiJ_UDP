@@ -8,7 +8,7 @@ import java.io.*;
  *
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
-public class WorkerThreadImpl implements WorkerThread, Runnable {
+public class WorkerThreadImpl implements WorkerThread {
     private Connection connection;
 
     public WorkerThreadImpl(Connection connection) {
@@ -19,16 +19,24 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
      * {@inheritDoc}
      */
     @Override
-    public void run() {
+    public Boolean call() {
         try {
             String message = "Connection established with " + connection.getSocket().getRemoteSocketAddress();
-            message += "\n + Listening for requests...";
             sendString(message);
-            sendRequest(getRequest());
+            sendRequest(getRequest());  // send the ID
+            try {
+                Thread.sleep(1000);    // to disconnect (testing)
+            } catch (InterruptedException ex) {
+                // do nothing
+            }
+            sendRequest(getRequest());  // send client_status
+            return true;
         } catch (IOException ex) {
-            ex.printStackTrace();
+            System.out.println(connection.getID() + " disconnected!!");
+            return false;
         }
     }
+
 
     /**
      * {@inheritDoc}
@@ -46,6 +54,7 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
         } else {
             throw new IOException("Invalid request: " + request.toString());
         }
+        System.out.println(" (" + toSend + ")");
         sendString(toSend);
     }
 
@@ -72,7 +81,7 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
             } else {
                 received = true;
                 request = Request.valueOf(line);
-                System.out.println(request.toString() + " request from " + connection.getSocket().getRemoteSocketAddress());
+                System.out.print(request.toString() + " request from " + connection.getSocket().getRemoteSocketAddress());
             }
         } while (!received);
         return request;
@@ -101,7 +110,6 @@ public class WorkerThreadImpl implements WorkerThread, Runnable {
             PrintWriter out = new PrintWriter(new OutputStreamWriter(connection.getSocket().getOutputStream()));
             out.println(toSend);
             out.flush();
-            System.out.println(toSend);
             return true;
         } catch (IOException ex) {
             System.out.println("Error");
