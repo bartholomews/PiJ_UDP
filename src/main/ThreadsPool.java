@@ -14,13 +14,13 @@ import java.util.List;
  */
 public interface ThreadsPool {
 
-    /**
+    /** TODO
      * Receive a socket and wraps it in a {@see Connection}. Add the connection on a List, and start a working
      * thread to keep the TCP communication with the Client connected with that socket.
      *
      * @param socket the socket connected with a Client.
      */
-    public void submit(Socket socket);
+    public void handleRequest(Socket socket);
 
     /**
      * The list of active Connections. It might be empty.

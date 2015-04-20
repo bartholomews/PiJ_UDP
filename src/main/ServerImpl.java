@@ -17,6 +17,10 @@ public class ServerImpl implements Server {
         pool = new ThreadsPoolImpl(10);
     }
 
+    public ServerImpl(int n) {
+        pool = new ThreadsPoolImpl(n);
+    }
+
     /**
      * Start the Server at port 2046 and start listening for connections.
      * For any accepted connection it sends an acknowledgement message
@@ -43,7 +47,7 @@ public class ServerImpl implements Server {
             while(true) {
                 System.out.println("Listening on port " + port + "...");
                 Socket sock = serverSocket.accept();
-                pool.submit(sock); //TODO
+                pool.handleRequest(sock); //TODO
             }
         }
     }
