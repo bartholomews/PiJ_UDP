@@ -22,7 +22,7 @@ public interface Client {
      * @return the Client socket opened with the Server.
      * @throws java.io.IOException for a communication error with the Server.
      */
-    public Socket connect(String hostname, int port) throws IOException;
+    public void connect(String hostname, int port) throws IOException;
 
     /**
      * Submit a request to the Server via the connected socket.
