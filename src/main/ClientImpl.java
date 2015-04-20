@@ -28,15 +28,14 @@ public class ClientImpl implements Client {
             getID(socket);
             ClientStatus status = getStatus(socket);
             System.out.println("Status received: " + status.name());
-   /*   TODO SEND AUDIO VIA UDP
+
             if (status == ClientStatus.SENDER) {
                 sendAudioChunks();
             } else {
-               getAudioChunks();
+            //   getAudioChunks(); TODO
             }
-   */
         } catch (IOException ex) {
-            System.out.println("Error during connection with the Server");
+            throw new IOException("Cannot establish a connection with the Server");
         }
     }
 
@@ -108,6 +107,34 @@ public class ClientImpl implements Client {
         UUID.fromString(id);
         System.out.println("ID received: " + id + " from " + socket.getRemoteSocketAddress());
         return id;
+    }
+
+    public void sendAudioChunks() throws IOException {
+        System.out.println("Client ready to send audio...");
+        try (DatagramSocket senderSocket = new DatagramSocket(3333);
+ // BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("just-a-test".getBytes())))
+        ) {
+            // boolean moreDataChunks = true;
+            // while(moreDataChunks){
+
+            System.out.println("Packet sent.");
+            byte[] buffer = new byte[1024];
+            // get the request from the server
+            DatagramPacket serverPacket = new DatagramPacket(buffer, buffer.length);
+            senderSocket.receive(serverPacket);
+            // pack the audio data
+            buffer = "some audio data".getBytes();
+
+            // if(in == null) {
+            // moreDataChunks = false;
+            // }
+
+            // send the audio data to the server
+            InetAddress address = serverPacket.getAddress();
+            int port = serverPacket.getPort();
+            serverPacket = new DatagramPacket(buffer, buffer.length, address, port);
+            senderSocket.send(serverPacket);
+        }
     }
 
 }
