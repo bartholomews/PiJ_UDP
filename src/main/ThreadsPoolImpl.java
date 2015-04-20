@@ -1,5 +1,9 @@
 package main;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,23 +68,26 @@ public class ThreadsPoolImpl implements ThreadsPool {
          */
         @Override
         public void run() {
-            Connection connection = createConnection();
-            Future<Boolean> task = threadsPool.submit(new WorkerThreadImpl(connection));
-            while (!task.isDone()) {
-                try {
-                    Thread.sleep(1000); // wait for the client to get the id and client_status
-                } catch (InterruptedException ex) {
-                    // do nothing
+            try {
+                Connection connection = createConnection();
+                Future<Boolean> task = threadsPool.submit(new WorkerThreadImpl(connection));
+                while (!task.isDone()) {
+                    try {
+                        Thread.sleep(1000); // wait for the client to get the id and client_status
+                    } catch (InterruptedException ex) {
+                        // do nothing
+                    }
                 }
+                //      listenForRequests();    // start a listener for possible further requests?
+                if (connection.isSender()) {
+                    getSenderAudio(connection);
+                } else {
+                    System.out.println("Server will soon stream audio to receiver client " + connection.getID());
+                    // broadcastAudio(); TODO
+                }
+            } catch (IOException ex) {
+                System.out.println("There has been an error during connection");
             }
-      /*      listenForRequests();    // start a listener for possible further requests?
-            if (connection.isSender()) {
-                getSenderAudio(connection);
-            } else {
-                System.out.println("Server will soon stream audio to receiver client " + connection.getID());
-                broadcastAudio();
-            }
-      */
         }
 
         /**
@@ -92,6 +99,42 @@ public class ThreadsPoolImpl implements ThreadsPool {
             Connection connection = new ConnectionImpl(socket, IdGenerator.generateID(), status);
             connections.add(connection);
             return connection;
+        }
+
+        /**
+         *
+         *
+         * @param connection
+         * @throws IOException
+         */
+        public void getSenderAudio(Connection connection) throws IOException {
+            System.out.println("Server requesting audio data from sender client " + connection.getID());
+            // get a datagram socket (try-with-resources)
+            try (DatagramSocket senderSocket = new DatagramSocket()) {
+                InetAddress address = connection.getSocket().getInetAddress();
+                // send request
+                byte[] buffer = new byte[1024];
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 3333);
+                senderSocket.send(packet);
+                senderSocket.setSoTimeout(5000);    // 5 sec timeout
+                // get response
+                packet = new DatagramPacket(buffer, buffer.length);
+                // ByteArrayInputStream byteIn = new ByteArrayInputStream(received.getData());
+                senderSocket.receive(packet);
+                // display response
+                String received = new String(packet.getData(), 0, packet.getLength());
+                System.out.println("Packet received: " + received);
+                data = buffer;
+            } catch (IOException ex) {
+                System.out.println(connection.getID() + " (" + connection.getStatus() + ") disconnected");
+                if (connection.isSender() && connections.size() > 1) {
+                    Connection newSender = connections.get(1);
+                    newSender.setStatus(ClientStatus.SENDER);
+                } // else ?
+                connections.remove(connection);
+                connection.getSocket().close();
+                // TODO let the new sender know and open a new UDP
+            }
         }
 
     }
