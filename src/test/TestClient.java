@@ -28,7 +28,7 @@ public class TestClient {
     private Client client;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         client = new ClientImpl();
     }
 
@@ -42,7 +42,7 @@ public class TestClient {
 
     @Test
     public void getStringOnEmptyInputStreamShouldReturnThrowIOException() throws IOException {
-      //  exception.expect(IOException.class);
+        exception.expect(IOException.class);
         Socket mock = getSocketMock("one-liner".getBytes());
         // consumes the readLine
         client.getString(mock);
