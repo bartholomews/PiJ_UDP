@@ -1,6 +1,7 @@
 package main;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
 
 /**
  * Worker thread for a {@see ThreadPool} which keeps a TCP point-to-point communication with a Client.
@@ -8,14 +9,14 @@ import java.io.IOException;
  *
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
-public interface WorkerThread extends Runnable {
+public interface WorkerThread extends Callable<Boolean> {
 
     /**
      * Main runnable method of the thread to communicate with the Client: should send an
      * acknowledge of connection, receive requests about the connection_status and ID,
      * reply to the requests providing information to the Client.
      */
-     public void run();
+     public Boolean call();
 
      /**
      * Writes out a String message to a Client.
