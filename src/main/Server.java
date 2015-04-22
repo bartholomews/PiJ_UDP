@@ -67,6 +67,6 @@ public interface Server {
      *
      * @return the instance of {@see UDPServer}
      */
-    public UDPServer getUdpServer();
+    public UDPServerImpl getUdpServer();
 
 }
