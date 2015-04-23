@@ -20,7 +20,6 @@ public class ServerHandlerImpl implements ServerHandler {
         this.server = server;
         this.socket = socket;
         udpServer = server.getUdpServer();
-
     }
 
     /**
@@ -30,7 +29,7 @@ public class ServerHandlerImpl implements ServerHandler {
     public void run() {
         System.out.println("From THREAD POOL: Connected to " + socket.getRemoteSocketAddress());
         try {
-            Connection connection = createConnection(socket);
+            Connection connection = createConnection();
             Future<Boolean> task = server.getPool().submit(new WorkerThreadImpl(connection));
             while (!task.isDone()) {
                 Thread.sleep(500); // wait for the client to get the id and client_status
@@ -43,10 +42,10 @@ public class ServerHandlerImpl implements ServerHandler {
             } else {
                 // broadcastAudio(); // UDPServer should always multicast if possible
             }
-        } catch (IOException ex) {
+  /*      } catch (IOException ex) {
             System.out.println("There has been an error during connection");
             ex.printStackTrace();
-        } catch (InterruptedException ex) {
+  */      } catch (InterruptedException ex) {
             // do nothing
         }
     }
@@ -59,7 +58,7 @@ public class ServerHandlerImpl implements ServerHandler {
      * @return
      */
     @Override
-    public synchronized Connection createConnection(Socket socket) {
+    public synchronized Connection createConnection() {
         ClientStatus status = server.getList().isEmpty() ? ClientStatus.SENDER : ClientStatus.RECEIVER;
         Connection connection = new ConnectionImpl(socket, server.generateID(), status);
         server.getList().add(connection);

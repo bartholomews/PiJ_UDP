@@ -1,7 +1,5 @@
 package main;
 
-import java.net.Socket;
-
 /**
  * Runnable class which manage one Client requests as a new thread. A request is sent by the main {@see Server}
  * which should reference itself at construction time, in order to give access to its getter methods.
@@ -35,10 +33,9 @@ public interface ServerHandler extends Runnable {
      * This method should be synchronized in order to have just one thread at the time accessing the
      * Server's Connections list.
      *
-     * @param socket the Client socket to wrap into a new instance of {@see Connection}
      * @return the newly create Connection
      */
-    public Connection createConnection(Socket socket);
+    public Connection createConnection();
 
 
 }
