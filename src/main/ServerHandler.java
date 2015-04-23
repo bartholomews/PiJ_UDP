@@ -11,6 +11,7 @@ import java.net.Socket;
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public interface ServerHandler extends Runnable {
+    // TODO is it good practice to extends Runnable in an interface? I'm not sure
 
     /**
      * Get the socket provided by the caller class ({@see Server} at construction time and wraps it
