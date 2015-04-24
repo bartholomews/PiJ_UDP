@@ -5,6 +5,8 @@ import java.net.*;
 import java.util.UUID;
 
 /**
+ * // TODO so far when a sender is disconnected, the receivers are blocked waiting to get the multicast,
+ * // TODO the new sender is the first new client to connect. Do tests and cleanup before fixing this.
  *  // TODO try with resources bufferedreader and printwriter as fields bound at construction time?
  *
  * @author federico.bartolomei (BBK-PiJ-2014-21)
@@ -28,11 +30,12 @@ public class ClientImpl implements Client {
             getID(socket);
             ClientStatus status = getStatus(socket);
             System.out.println("Status received: " + status.name());
-
+            // THIS SHOULD BE A WHILE LOOP, CLIENTS SHOULD HAVE A QUICK CHECK BEFORE EVERY PACKET
+            // TO SEE IF THEIR CLIENT_STATUS HAS CHANGED
             if (status == ClientStatus.SENDER) {
                 sendAudioChunks();
             } else {
-            //   getAudioChunks(); TODO
+                getAudioChunks(); // TODO
             }
         } catch (IOException ex) {
             throw new IOException("Cannot establish a connection with the Server");
@@ -61,7 +64,7 @@ public class ClientImpl implements Client {
      *
      * @param socket  the socket connected with the Server
      * @param request the Client request to be sent to the Server
-     * @throws IOException for an error during connection
+     * @throws IOException          for an error during connection
      * @throws NullPointerException for a null Request
      */
     @Override
@@ -84,7 +87,7 @@ public class ClientImpl implements Client {
      *
      * @param socket the socket connected with the Server
      * @return the current status flag of the client (either RECEIVER or SENDER)
-     * @throws IOException for a communication error
+     * @throws IOException              for a communication error
      * @throws IllegalArgumentException if an invalid ClientStatus is received
      */
     public ClientStatus getStatus(Socket socket) throws IOException {
@@ -97,7 +100,7 @@ public class ClientImpl implements Client {
      *
      * @param socket the socket connected with the Server
      * @return a String with the unique ID requested
-     * @throws IOException for a communication error
+     * @throws IOException              for a communication error
      * @throws IllegalArgumentException if an invalid UUID is received
      */
     @Override
@@ -109,31 +112,78 @@ public class ClientImpl implements Client {
         return id;
     }
 
-    public void sendAudioChunks() throws IOException {
-        System.out.println("Client ready to send audio...");
-        try (DatagramSocket senderSocket = new DatagramSocket(3333);
- // BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("just-a-test".getBytes())))
-        ) {
+    public void sendAudioChunks() {
+        int n = 0; // just for testing;
+        try (DatagramSocket senderSocket = new DatagramSocket(3333)) {
+             // BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("just-a-test".getBytes())))
+
             // boolean moreDataChunks = true;
             // while(moreDataChunks){
+            while (true) {
+                System.out.println("Client ready to send next audio chunk...");
+                byte[] buffer = new byte[1024];
+                // get the request from the server
+                DatagramPacket serverPacket = new DatagramPacket(buffer, buffer.length);
+                senderSocket.receive(serverPacket);
+                // pack the audio data
+                buffer = ("PACKET " + ++n).getBytes();
 
-            System.out.println("Packet sent.");
-            byte[] buffer = new byte[1024];
-            // get the request from the server
-            DatagramPacket serverPacket = new DatagramPacket(buffer, buffer.length);
-            senderSocket.receive(serverPacket);
-            // pack the audio data
-            buffer = "some audio data".getBytes();
+                // if(in == null) {
+                // moreDataChunks = false;
+                // }
 
-            // if(in == null) {
-            // moreDataChunks = false;
-            // }
+                // send the audio data to the server
+                InetAddress address = serverPacket.getAddress();
+                int port = serverPacket.getPort();
+                serverPacket = new DatagramPacket(buffer, buffer.length, address, port);
+                senderSocket.send(serverPacket);
+                System.out.println("Packet " + n + " sent.");
+                Thread.sleep(2000); // avoid stackoverflow, testing
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } catch (InterruptedException ex) {
+            //
+        }
+    }
 
-            // send the audio data to the server
-            InetAddress address = serverPacket.getAddress();
-            int port = serverPacket.getPort();
-            serverPacket = new DatagramPacket(buffer, buffer.length, address, port);
-            senderSocket.send(serverPacket);
+    // TODO THIS METHODS SHOULD RUN TOGETHER WITH A LISTENER THREAD IN CASE THE SENDER IS DISCONNECTED?
+    public void getAudioChunks() throws IOException {
+        System.out.println("Ready to receive via multicast");
+
+        /*
+        SecurityManager security = System.getSecurityManager();
+        if(security==null) {
+
+        }
+        security.checkListen(MULTICAST_PORT);   // will throw exception :(
+        */
+        SecurityManager securityManager = System.getSecurityManager();
+        if (securityManager == null) {
+            System.setSecurityManager(new SecurityManager());
+        }
+        while (true) {
+            try {
+                MulticastSocket multicastSocket = new MulticastSocket(4446);
+                InetAddress group = InetAddress.getByName("230.0.0.1");
+                multicastSocket.joinGroup(group);
+                System.out.println("joined group");
+
+                DatagramPacket packet;
+
+                //  while(true) {   // while(SOMETHING ELSE?)
+
+                byte[] buffer = new byte[1024];
+                packet = new DatagramPacket(buffer, buffer.length);
+                multicastSocket.receive(packet);
+                String received = new String(packet.getData(), 0, packet.getLength());
+                System.out.println("Received via multicasting: " + received);
+
+            } catch (SecurityException ex) {
+                ex.printStackTrace();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
