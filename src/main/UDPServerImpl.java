@@ -36,9 +36,25 @@ public class UDPServerImpl implements UDPServer {
         */
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void run() {
-        // TODO
+        while (true) {
+            try {
+                // SYNCHRONIZED?
+                while (server.getList().size() < 2 || data == null) {
+                    Thread.sleep(1000);
+                }
+                multicastAudio(data);
+            } catch (InterruptedException ex) {
+                // do nothing
+            } catch (IOException ex) {
+                System.out.println("There has been an error while multicasting audio data");
+                ex.printStackTrace();
+            }
+        }
     }
 
     //    AudioInputStream audioIn = AudioSystem.getAudioInputStream(audioFile);
@@ -87,10 +103,45 @@ public class UDPServerImpl implements UDPServer {
         }
     }
 
-    @Override
-    public void multicastAudio(byte[] data) throws IOException {
-        return;    // TODO
+    /**
+     * Return the packed of byte[] received from the SENDER Client via UDP;
+     * that is, after the method getSenderAudio(Connection).
+     *
+     * @return the last packet received from the SENDER Client
+     */
+    public byte[] getData() {
+        return data;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @param data
+     * @throws java.io.IOException
+     */
+    @Override
+    public void multicastAudio(byte[] data) throws IOException {
+            /*
+            System.out.println("Server will soon stream audio to receiver client " + socket.getRemoteSocketAddress());
+            final int MULTICAST_PORT = 3332;
+            final String GROUP_INETADDRESS = "230.0.0.1";
+            */
+        //       while (true) {
+        try {
+            //      byte[] chunk = data;
+            DatagramPacket packet = new DatagramPacket(data, data.length, group, 4446);
+            socketToMulticast.send(packet);
+            System.out.println(packet.toString() + "sent via multicasting");
+            Thread.sleep(3000);
+        } catch (InterruptedException ex) {
+            //
+        } catch (IOException ex) {
+            System.out.println("There has been an error while multicasting");
+            // TODO should set a timer and catch the IOException with new getSenderAudio() ?
+        }
+
+        //    DatagramPacket packet = new DatagramPacket(buffer, buffer.length)
+    }
+//   }
 
 }
