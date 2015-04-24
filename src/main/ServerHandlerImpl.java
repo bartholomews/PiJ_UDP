@@ -11,7 +11,7 @@ import java.util.concurrent.Future;
  */
 public class ServerHandlerImpl implements ServerHandler {
     private Server server;
-    private UDPServerImpl udpServer; // TODO
+    private UDPServerImpl udpServer;
     private Socket socket;
  //   private boolean moreData;
 
@@ -19,7 +19,6 @@ public class ServerHandlerImpl implements ServerHandler {
     public ServerHandlerImpl(Server server, Socket socket) throws IOException {
         this.server = server;
         this.socket = socket;
-        udpServer = server.getUdpServer();
     }
 
     /**
@@ -27,6 +26,7 @@ public class ServerHandlerImpl implements ServerHandler {
      */
     @Override
     public void run() {
+        udpServer = server.getUdpServer();
         System.out.println("From THREAD POOL: Connected to " + socket.getRemoteSocketAddress());
         try {
             Connection connection = createConnection();
@@ -38,14 +38,14 @@ public class ServerHandlerImpl implements ServerHandler {
             }
             if (connection.isSender()) {
                 System.out.println("Sending audio request to " + connection.getStatus());
-          //      udpServer.getSenderAudio(connection); TODO
+                udpServer.getSenderAudio(connection); // TODO
             } else {
-                // broadcastAudio(); // UDPServer should always multicast if possible
+                // UDPServer should always be ready to multicast if possible
             }
-  /*      } catch (IOException ex) {
+        } catch (IOException ex) {
             System.out.println("There has been an error during connection");
             ex.printStackTrace();
-  */      } catch (InterruptedException ex) {
+        } catch (InterruptedException ex) {
             // do nothing
         }
     }

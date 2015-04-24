@@ -26,7 +26,7 @@ public class ServerImpl implements Server {
         threadsPool = Executors.newFixedThreadPool(10);
         idGenerator = new IdGeneratorImpl();
         connections = new LinkedList<>();
-    //    udpServer = new UDPServerImpl(this); TODO
+        udpServer = new UDPServerImpl(this);
     }
 
     /**
@@ -105,7 +105,7 @@ public class ServerImpl implements Server {
      */
     @Override
     public UDPServerImpl getUdpServer() {
-        return null; // (UDPServerImpl) udpServer; TODO
+        return (UDPServerImpl) udpServer;
     }
 
 }
