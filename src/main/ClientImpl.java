@@ -2,6 +2,7 @@ package main;
 
 import java.io.*;
 import java.net.*;
+import java.security.AccessControlException;
 import java.util.UUID;
 
 /**
@@ -12,7 +13,8 @@ import java.util.UUID;
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public class ClientImpl implements Client {
-    // private MulticastSocket multicastSocket TODO
+    private final int MULTICAST_PORT = 4446;
+    private final String MULTICAST_INETADDRESS = "230.0.0.1";
 
     /**
      * {@inheritDoc}
@@ -115,7 +117,7 @@ public class ClientImpl implements Client {
     public void sendAudioChunks() {
         int n = 0; // just for testing;
         try (DatagramSocket senderSocket = new DatagramSocket(3333)) {
-             // BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("just-a-test".getBytes())))
+            // BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("just-a-test".getBytes())))
 
             // boolean moreDataChunks = true;
             // while(moreDataChunks){
@@ -150,22 +152,14 @@ public class ClientImpl implements Client {
     // TODO THIS METHODS SHOULD RUN TOGETHER WITH A LISTENER THREAD IN CASE THE SENDER IS DISCONNECTED?
     public void getAudioChunks() throws IOException {
         System.out.println("Ready to receive via multicast");
-
-        /*
-        SecurityManager security = System.getSecurityManager();
-        if(security==null) {
-
-        }
-        security.checkListen(MULTICAST_PORT);   // will throw exception :(
-        */
         SecurityManager securityManager = System.getSecurityManager();
         if (securityManager == null) {
             System.setSecurityManager(new SecurityManager());
         }
         while (true) {
             try {
-                MulticastSocket multicastSocket = new MulticastSocket(4446);
-                InetAddress group = InetAddress.getByName("230.0.0.1");
+                MulticastSocket multicastSocket = new MulticastSocket(MULTICAST_PORT);
+                InetAddress group = InetAddress.getByName(MULTICAST_INETADDRESS);
                 multicastSocket.joinGroup(group);
                 System.out.println("joined group");
 
@@ -179,8 +173,10 @@ public class ClientImpl implements Client {
                 String received = new String(packet.getData(), 0, packet.getLength());
                 System.out.println("Received via multicasting: " + received);
 
-            } catch (SecurityException ex) {
+            } catch (AccessControlException ex) {
                 ex.printStackTrace();
+                System.out.println("Please reboot the Client with a security.policy in runtime configuration.");
+                System.exit(1);
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
