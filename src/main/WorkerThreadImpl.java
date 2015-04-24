@@ -17,6 +17,8 @@ public class WorkerThreadImpl implements WorkerThread {
 
     /**
      * {@inheritDoc}
+     *
+     * @return true after the TCP communication has ended successfully
      */
     @Override
     public Boolean call() {
@@ -25,14 +27,14 @@ public class WorkerThreadImpl implements WorkerThread {
             sendString(message);
             sendRequest(getRequest());  // send the ID
             try {
-                Thread.sleep(1000);    // to disconnect (testing)
+                Thread.sleep(1000);    // to disconnect (for live testing)
             } catch (InterruptedException ex) {
                 // do nothing
             }
             sendRequest(getRequest());  // send client_status
             return true;
         } catch (IOException ex) {
-            System.out.println(connection.getID() + " disconnected!!");
+            System.out.println(connection.getID() + " disconnected");
             return false;
         }
     }
@@ -90,7 +92,7 @@ public class WorkerThreadImpl implements WorkerThread {
     /**
      * {@inheritDoc}
      *
-     * @return the connection assigned to the thread.
+     * @return the connection assigned to the thread
      */
     @Override
     public Connection getConnection() {
@@ -100,9 +102,9 @@ public class WorkerThreadImpl implements WorkerThread {
     /**
      * {@inheritDoc}
      *
-     * @param toSend the String message to be sent via the socket.
-     * @return true after the stream is flushed.
-     * @throws IOException for a communication error.
+     * @param toSend the String message to be sent via the socket
+     * @return true after the stream is flushed
+     * @throws IOException for a communication error
      */
     @Override
     public boolean sendString(String toSend) throws IOException {

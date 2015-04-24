@@ -15,15 +15,17 @@ public interface WorkerThread extends Callable<Boolean> {
      * Main runnable method of the thread to communicate with the Client: should send an
      * acknowledge of connection, receive requests about the connection_status and ID,
      * reply to the requests providing information to the Client.
+     *
+     * @return true after the TCP communication has ended successfully
      */
      public Boolean call();
 
      /**
      * Writes out a String message to a Client.
      *
-     * @param toSend the String message to be sent via the socket.
-     * @return true after the stream is flushed.
-     * @throws IOException for a communication error.
+     * @param toSend the String message to be sent via the socket
+     * @return true after the stream is flushed
+     * @throws IOException for a communication error
      */
     public boolean sendString(String toSend) throws IOException;
 
