@@ -10,6 +10,7 @@ import java.io.*;
  */
 public class WorkerThreadImpl implements WorkerThread {
     private Connection connection;
+    private final int FIVE_SECONDS = 5000;
 
     public WorkerThreadImpl(Connection connection) {
         this.connection = connection;
@@ -23,6 +24,7 @@ public class WorkerThreadImpl implements WorkerThread {
     @Override
     public Boolean call() {
         try {
+            connection.getSocket().setSoTimeout(FIVE_SECONDS); // 5 sec timeout
             String message = "Connection established with " + connection.getSocket().getRemoteSocketAddress();
             sendString(message);
             sendRequest(getRequest());  // send the ID
@@ -38,7 +40,6 @@ public class WorkerThreadImpl implements WorkerThread {
             return false;
         }
     }
-
 
     /**
      * {@inheritDoc}
