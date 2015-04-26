@@ -76,7 +76,7 @@ public class ClientImpl implements Client {
             if (status == ClientStatus.SENDER) {
                 sendAudio();
             } else {
-                getAudioChunks();
+                getAudio();
             }
         } catch (InterruptedException ex) {
             //
@@ -180,7 +180,18 @@ public class ClientImpl implements Client {
                     numFramesRead = numBytesRead / bytesPerFrame;
                     totalFramesRead += numFramesRead;
 
-                    sendAudioChunks(audioBytes);
+                    System.out.println("Client ready to send next audio chunk...");
+
+                    // get the request from the server
+                    DatagramPacket serverPacket = new DatagramPacket(audioBytes, audioBytes.length);
+                    senderSocket.receive(serverPacket);
+
+                    // send the audio data to the server
+                    InetAddress address = serverPacket.getAddress();
+                    int port = serverPacket.getPort();
+                    serverPacket = new DatagramPacket(audioBytes, audioBytes.length, address, port);
+                    senderSocket.send(serverPacket);
+                    Thread.sleep(500);  // to make it more "readable"
 
                     System.out.println("Packet " + ++count + " sent.");
                 }
@@ -191,30 +202,13 @@ public class ClientImpl implements Client {
         } catch (IOException ex) {
             System.out.println("Error while packing audio");
             ex.printStackTrace();
-        }
-    }
-
-    public void sendAudioChunks(byte[] audioBytes) throws IOException {
-        System.out.println("Client ready to send next audio chunk...");
-
-        // get the request from the server
-        DatagramPacket serverPacket = new DatagramPacket(audioBytes, audioBytes.length);
-        senderSocket.receive(serverPacket);
-
-        // send the audio data to the server
-        InetAddress address = serverPacket.getAddress();
-        int port = serverPacket.getPort();
-        serverPacket = new DatagramPacket(audioBytes, audioBytes.length, address, port);
-        senderSocket.send(serverPacket);
-        try {
-            Thread.sleep(500); // avoid stackoverflow, testing
-        } catch (InterruptedException ex) {
+        } catch(InterruptedException ex) {
             //
         }
     }
 
     // TODO THIS METHODS SHOULD RUN TOGETHER WITH A LISTENER THREAD IN CASE THE SENDER IS DISCONNECTED?
-    public void getAudioChunks() throws IOException {
+    public void getAudio() throws IOException {
         System.out.println("Ready to receive via multicast");
         SecurityManager securityManager = System.getSecurityManager();
         if (securityManager == null) {
