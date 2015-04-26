@@ -2,11 +2,10 @@ package main;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * The Server class takes connection requests from multiple Clients over TCP
- * on a specified port number(s?). TODO should have one fixed final PORT field or each instance can choose a port?
+ * The Server class takes connection requests from multiple Clients over TCP.
  * For every request, it should acknowledge the connection and place it into a separate pool of worker threads,
  * then it should go back to receive new connections. It should accept an indefinite number of connections,
  * but at construction time it could be set the size of threads' pool (i.e. how many connections can be further
@@ -39,7 +38,7 @@ public interface Server {
      *
      * @return the Pool of {@see WorkerThread} instances
      */
-    public ExecutorService getPool();
+    public ScheduledExecutorService getPool();
 
     /**
      * Getter for the unique ID-number to assign to each Client.

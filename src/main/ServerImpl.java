@@ -3,11 +3,9 @@ package main;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Implementation of interface {@see Server}
@@ -16,13 +14,13 @@ import java.util.concurrent.Executors;
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public class ServerImpl implements Server {
-    private ExecutorService threadsPool;
+    private ScheduledExecutorService threadsPool;
     private IdGenerator idGenerator;
     private Runnable udpServer;
 
 
     public ServerImpl() throws IOException {
-        threadsPool = Executors.newFixedThreadPool(10);
+        threadsPool = Executors.newScheduledThreadPool(30);
         idGenerator = new IdGeneratorImpl();
         udpServer = new UDPServerImpl();
     }
@@ -71,7 +69,7 @@ public class ServerImpl implements Server {
      *
      * @return the Pool of {@see WorkerThread} instances
      */
-    public ExecutorService getPool() {
+    public ScheduledExecutorService getPool() {
         return threadsPool;
     }
 
