@@ -8,9 +8,6 @@ import java.util.UUID;
 import java.util.concurrent.*;
 
 /**
- * // TODO so far when a sender is disconnected, the receivers are blocked waiting to get the multicast,
- * // TODO the new sender is the first new client to connect. Do tests and cleanup before fixing this.
- *  // TODO try with resources bufferedreader and printwriter as fields bound at construction time?
  *
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
@@ -28,6 +25,9 @@ public class ClientImpl implements Client {
     public ClientImpl(String audioPath) {
         listener = Executors.newSingleThreadScheduledExecutor();
         audioFile = new File(audioPath);
+        if(!audioFile.exists()) {
+            System.out.println(audioFile + " doesn't exist");
+        }
         format = new AudioFormat(44100, 16, 1, true, false);
     }
 
