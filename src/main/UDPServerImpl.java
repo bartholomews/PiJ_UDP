@@ -73,7 +73,7 @@ public class UDPServerImpl implements UDPServer {
             try (DatagramSocket senderSocket = new DatagramSocket()) {
                 InetAddress address = connection.getSocket().getInetAddress();
                 // send request
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[2048];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 3333);
                 senderSocket.send(packet);
                 System.out.println("Request sent.");
@@ -97,6 +97,9 @@ public class UDPServerImpl implements UDPServer {
                     Connection newSender = server.getList().get(0);
                     newSender.setStatus(ClientStatus.SENDER);
                     getSenderAudio(newSender);
+                } else {
+                    System.out.println("No other Client is connected so far. Listening on port 2046...");
+                    return;
                 }
                 // TODO let the new sender know and open a new UDP
             }
