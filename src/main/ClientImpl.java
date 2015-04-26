@@ -5,10 +5,7 @@ import java.io.*;
 import java.net.*;
 import java.security.AccessControlException;
 import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 
 /**
  * // TODO so far when a sender is disconnected, the receivers are blocked waiting to get the multicast,
@@ -30,7 +27,7 @@ public class ClientImpl implements Client {
     public ClientImpl(String audioPath) {
         listener = Executors.newSingleThreadScheduledExecutor();
         audioFile = new File(audioPath);
-        format = new AudioFormat(44100, 16, 1, true, false);    // otherwise use getAudioFormat() at the bottom
+        format = new AudioFormat(44100, 16, 1, true, false);
     }
 
     // for testing
@@ -40,7 +37,7 @@ public class ClientImpl implements Client {
         if (!audioFile.exists()) {
             System.out.println(audioFile + " doesn't exist");
         }
-        format = new AudioFormat(44100, 16, 1, true, false);    // otherwise use getAudioFormat() at the bottom
+        format = new AudioFormat(44100, 16, 1, true, false);
     }
 
     /**
@@ -68,7 +65,7 @@ public class ClientImpl implements Client {
     public void init() throws IOException {
         try {
             Future<ClientStatus> task = listener.submit(new TCPClient());
-            //             listener.schedule(new TCPClient(), 3, TimeUnit.SECONDS);
+            listener.schedule(new TCPClient(), 3, TimeUnit.SECONDS);
             while (!task.isDone()) {
                 Thread.sleep(500);
             }
@@ -155,6 +152,10 @@ public class ClientImpl implements Client {
         return id;
     }
 
+    /**
+     *
+     */
+    @Override
     public void sendAudio() {
         try {
             senderSocket = new DatagramSocket(3333);
@@ -207,72 +208,66 @@ public class ClientImpl implements Client {
         }
     }
 
-    // TODO THIS METHODS SHOULD RUN TOGETHER WITH A LISTENER THREAD IN CASE THE SENDER IS DISCONNECTED?
+    /**
+     *
+     * @throws IOException
+     */
+    @Override
     public void getAudio() throws IOException {
-        System.out.println("Ready to receive via multicast");
-        SecurityManager securityManager = System.getSecurityManager();
-        if (securityManager == null) {
-            System.setSecurityManager(new SecurityManager());
-        }
-        try {
-            MulticastSocket multicastSocket = new MulticastSocket(MULTICAST_PORT);
-            InetAddress group = InetAddress.getByName(MULTICAST_INETADDRESS);
-            multicastSocket.joinGroup(group);
-            System.out.println("joined group");
-
-            while (!status.equals(ClientStatus.SENDER)) {
-                DatagramPacket packet;
-
-                byte[] buffer = new byte[2048];
-                packet = new DatagramPacket(buffer, buffer.length);
-                multicastSocket.receive(packet);
-
-                play(packet);
+        while (status == ClientStatus.RECEIVER) {
+            System.out.println("Ready to receive via multicast");
+            SecurityManager securityManager = System.getSecurityManager();
+            if (securityManager == null) {
+                System.setSecurityManager(new SecurityManager());
             }
-        } catch (AccessControlException ex) {
-            ex.printStackTrace();
-            System.out.println("Please reboot the Client with a security.policy in runtime configuration.");
-            System.exit(1);
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            try {
+                MulticastSocket multicastSocket = new MulticastSocket(MULTICAST_PORT);
+                InetAddress group = InetAddress.getByName(MULTICAST_INETADDRESS);
+                multicastSocket.joinGroup(group);
+                System.out.println("joined group");
+
+                while (!status.equals(ClientStatus.SENDER)) {
+                    DatagramPacket packet;
+
+                    byte[] buffer = new byte[2048];
+                    packet = new DatagramPacket(buffer, buffer.length);
+                    multicastSocket.receive(packet);
+
+                    play(packet);
+                }
+            } catch (AccessControlException ex) {
+                ex.printStackTrace();
+                System.out.println("Please reboot the Client with a security.policy in runtime configuration.");
+                System.exit(1);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
+        sendAudio();
     }
 
     /**
-     * TODO
-     * Open the AudioInputStream
+     * Open an AudioInputStream on the Byte[] data within a DatagramPacket and start a SourceDataLine on it.
      *
-     * @param packet
+     * @param packet the DatagramPacket to play
      */
-    public void play(DatagramPacket packet) {
-   //     File audioFile = new File(audioPath);
-
+    private void play(DatagramPacket packet) {
         try {
-
-       //     AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(audioFile);
             AudioInputStream audioIn = new AudioInputStream(new ByteArrayInputStream(packet.getData()), format, packet.getLength());
-      //      AudioFormat format = audioIn.getFormat();
             DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
             SourceDataLine audioLine = (SourceDataLine) AudioSystem.getLine(info);
             audioLine.open(format);
             audioLine.start();
             System.out.println("Playback started");
-
             byte[] buffer = new byte[1024];
             int bytesRead = -1;
             while((bytesRead = audioIn.read(buffer)) != -1) {
                 audioLine.write(buffer, 0, bytesRead);
             }
-
             audioLine.drain();
             audioLine.close();
             audioIn.close();
-
             System.out.println("Playback completed.");
-
-    //    } catch (UnsupportedAudioFileException ex) {
-    //        System.out.println("Audio file not supported");
-    //        ex.printStackTrace();
         } catch(LineUnavailableException ex) {
             System.out.println("Audio line unavailable");
             ex.printStackTrace();
@@ -282,6 +277,11 @@ public class ClientImpl implements Client {
         }
     }
 
+    /**
+     * Inner Callable class which should be scheduled to run periodically maintaining
+     * a TCP communication with the server. Most importantly it should update the
+     * Client_Status in order to make the Client change its routine if necessary.
+     */
     public class TCPClient implements Callable<ClientStatus> {
 
         public ClientStatus call() throws IOException {

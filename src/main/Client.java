@@ -5,7 +5,6 @@ import java.net.Socket;
 
 /**
  * The Client class connects over TCP to the Server specified by a hostname field.
- * TODO it might choose to specify the hostname from command-line, or chosen via a prompt? Should choose the port, too?
  * Once connected, the Client asks for an unique ID and whether is the first to connect.
  * Then it opens an UDP connection to the Server, and sends the audio chunks if it's the first Client,
  * or start receiving audio chunks if it's not. If the sender client gets disconnected,
@@ -64,5 +63,15 @@ public interface Client {
      * @throws IllegalArgumentException if an invalid UUID is received
      */
     public String getID(Socket socket) throws IOException;
+
+    /**
+     * Send audio (in chunks) to the server.
+     */
+    public void sendAudio();
+
+    /**
+     * Get audio (in chunks) from the server and play audio.
+     */
+    public void getAudio() throws IOException;
 
 }
