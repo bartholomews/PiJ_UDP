@@ -36,29 +36,29 @@ public class TestServerHandler {
 
     @Test
     public void createConnectionFirstConnectionShouldSetSENDERClientStatus() throws IOException {
-        assertTrue(server.getList().isEmpty());
+        assertTrue(server.getUdpServer().getList().isEmpty());
         test.createConnection();
-        assertEquals(server.getList().size(), 1);
-        assertEquals(server.getList().get(0).getStatus(), ClientStatus.SENDER.name());
+        assertEquals(server.getUdpServer().getList().size(), 1);
+        assertEquals(server.getUdpServer().getList().get(0).getStatus(), ClientStatus.SENDER.name());
     }
 
     @Test
     public void createConnectionNotFirstConnectionShouldSetRECEIVERClientStatus() throws IOException {
-        assertTrue(server.getList().isEmpty());
+        assertTrue(server.getUdpServer().getList().isEmpty());
         test.createConnection();
         test.createConnection();
-        assertEquals(server.getList().size(), 2);
-        assertEquals(server.getList().get(0).getStatus(), ClientStatus.SENDER.name());
-        assertEquals(server.getList().get(1).getStatus(), ClientStatus.RECEIVER.name());
+        assertEquals(server.getUdpServer().getList().size(), 2);
+        assertEquals(server.getUdpServer().getList().get(0).getStatus(), ClientStatus.SENDER.name());
+        assertEquals(server.getUdpServer().getList().get(1).getStatus(), ClientStatus.RECEIVER.name());
     }
 
     @Test
     public void createConnectionRemoveItNewConnectionShouldBeSENDER() {
         test.createConnection();
-        assertEquals(server.getList().get(0).getStatus(), ClientStatus.SENDER.name());
-        server.getList().remove(0);
+        assertEquals(server.getUdpServer().getList().get(0).getStatus(), ClientStatus.SENDER.name());
+        server.getUdpServer().getList().remove(0);
         test.createConnection();
-        assertEquals(server.getList().get(0).getStatus(), ClientStatus.SENDER.name());
+        assertEquals(server.getUdpServer().getList().get(0).getStatus(), ClientStatus.SENDER.name());
     }
 
     // TODO
@@ -73,10 +73,10 @@ public class TestServerHandler {
         for (int i = 0; i <= 1000; i++) {
             test.createConnection();
         }
-        assertFalse(server.getList().isEmpty());
-        for (int i = 0; i < server.getList().size(); i++) {
-            for (int j = i + 1; j < server.getList().size(); j++) {
-                assertNotEquals(server.getList().get(i).getID(), server.getList().get(j).getID());
+        assertFalse(server.getUdpServer().getList().isEmpty());
+        for (int i = 0; i < server.getUdpServer().getList().size(); i++) {
+            for (int j = i + 1; j < server.getUdpServer().getList().size(); j++) {
+                assertNotEquals(server.getUdpServer().getList().get(i).getID(), server.getUdpServer().getList().get(j).getID());
             }
         }
     }
