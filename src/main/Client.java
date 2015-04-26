@@ -66,11 +66,15 @@ public interface Client {
 
     /**
      * Send audio (in chunks) to the server.
+     *
+     * @throws java.io.IOException for an error during communication
      */
-    public void sendAudio();
+    public void sendAudio() throws IOException;
 
     /**
      * Get audio (in chunks) from the server and play audio.
+     *
+     * @throws java.io.IOException for an error during communication
      */
     public void getAudio() throws IOException;
 

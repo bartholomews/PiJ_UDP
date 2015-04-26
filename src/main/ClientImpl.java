@@ -15,6 +15,7 @@ import java.util.concurrent.*;
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public class ClientImpl implements Client {
+    private final int FIVE_SECONDS = 5000;
     private final int MULTICAST_PORT = 4446;
     private final String MULTICAST_INETADDRESS = "230.0.0.1";
     private File audioFile;
@@ -153,10 +154,12 @@ public class ClientImpl implements Client {
     }
 
     /**
+     * {@inheritDoc}
      *
+     * @throws IOException for an error during communication
      */
     @Override
-    public void sendAudio() {
+    public void sendAudio() throws IOException {
         try {
             senderSocket = new DatagramSocket(3333);
             while (true) {
@@ -201,16 +204,16 @@ public class ClientImpl implements Client {
             System.out.println("Unsupported audio");
             ex.printStackTrace();
         } catch (IOException ex) {
-            System.out.println("Error while packing audio");
-            ex.printStackTrace();
+           throw new IOException("Error while packing audio");
         } catch(InterruptedException ex) {
             //
         }
     }
 
     /**
+     * {@inheritDoc}
      *
-     * @throws IOException
+     * @throws IOException for an error during communication
      */
     @Override
     public void getAudio() throws IOException {
@@ -225,7 +228,7 @@ public class ClientImpl implements Client {
                 InetAddress group = InetAddress.getByName(MULTICAST_INETADDRESS);
                 multicastSocket.joinGroup(group);
                 System.out.println("joined group");
-
+                multicastSocket.setSoTimeout(FIVE_SECONDS);
                 while (!status.equals(ClientStatus.SENDER)) {
                     DatagramPacket packet;
 
@@ -240,7 +243,7 @@ public class ClientImpl implements Client {
                 System.out.println("Please reboot the Client with a security.policy in runtime configuration.");
                 System.exit(1);
             } catch (IOException ex) {
-                ex.printStackTrace();
+                throw new IOException("Error while communicating with the Server.");
             }
         }
         sendAudio();
