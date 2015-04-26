@@ -1,7 +1,6 @@
 package main;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -33,15 +32,6 @@ public interface Server {
      * @throws IOException for a communication error.
      */
     public void init(int port) throws IOException;
-
-    /**
-     * Getter for the list of active {@see Connections}. It might be empty.
-     * Each Connection in the list wraps a Socket connected with a specific Client,
-     * that Client's unique ID and {@see ClientStatus} of SENDER or RECEIVER.
-     *
-     * @return a List, maybe empty, of active Connections.
-     */
-    public List<Connection> getList();
 
     /**
      * Getter for the Pool of worker Threads which concurrently handle a TCP Connection with each Client.

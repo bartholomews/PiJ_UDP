@@ -1,6 +1,7 @@
 package main;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Class which deals with UDP Connection with a Client (identified as a {@see Connection} instance).
@@ -43,6 +44,13 @@ public interface UDPServer extends Runnable {
      */
     public void multicastAudio(byte[] data) throws IOException;
 
-
+    /**
+     * Getter for the list of active {@see Connections}. It might be empty.
+     * Each Connection in the list wraps a Socket connected with a specific Client,
+     * that Client's unique ID and {@see ClientStatus} of SENDER or RECEIVER.
+     *
+     * @return a List, maybe empty, of active Connections.
+     */
+    public List<Connection> getList();
 
 }

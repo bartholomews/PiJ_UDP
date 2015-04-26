@@ -5,6 +5,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Implementation of {@see UDPServer}.
@@ -12,7 +14,7 @@ import java.net.MulticastSocket;
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public class UDPServerImpl implements UDPServer {
-    private Server server;
+    private List<Connection> connections;
     private int FIVE_SECONDS = 5000;
 //    private BufferedReader in = null;
 //    private boolean moreData = true;
@@ -21,8 +23,8 @@ public class UDPServerImpl implements UDPServer {
     private InetAddress group;
     private byte[] data;    // TO SORT OUT
 
-    public UDPServerImpl(Server server) throws IOException {
-        this.server = server;
+    public UDPServerImpl() throws IOException {
+        connections = new LinkedList<>();
         socketToMulticast = new MulticastSocket(3332);
         group = InetAddress.getByName("230.0.0.1");
 
@@ -44,7 +46,7 @@ public class UDPServerImpl implements UDPServer {
         while (true) {
             try {
                 // SYNCHRONIZED?
-                while (server.getList().size() < 2 || data == null) {
+                while (connections.size() < 2 || data == null) {
                     Thread.sleep(1000);
                 }
                 multicastAudio(data);
@@ -87,22 +89,24 @@ public class UDPServerImpl implements UDPServer {
                 System.out.println("Packet received: " + received);
                 data = buffer;
             } catch (IOException ex) {
-                System.out.println(connection.getID() + " (" + connection.getStatus() + ") disconnected");
-                // SYNCHRONIZED
-                server.getList().remove(connection);
-                connection.getSocket().close();
-                if (!server.getList().isEmpty()) {
-                    // THIS SHOULD BE SYNCHRONIZED WITH CREATECONNECTION() IN SERVERHANDLER
-                    System.out.println("Getting a new sender..");
-                    Connection newSender = server.getList().get(0);
-                    newSender.setStatus(ClientStatus.SENDER);
-                    getSenderAudio(newSender);
-                } else {
-                    System.out.println("No other Client is connected so far. Listening on port 2046...");
-                    return;
-                }
-                // TODO let the new sender know and open a new UDP
+                getNewSender(connection);
             }
+        }
+    }
+
+    public synchronized void getNewSender(Connection connection) throws IOException {
+        System.out.println(connection.getID() + " (" + connection.getStatus() + ") disconnected");
+        // SYNCHRONIZED
+        connections.remove(connection);
+        connection.getSocket().close();
+        if (!connections.isEmpty()) {
+            // THIS SHOULD BE SYNCHRONIZED WITH CREATECONNECTION() IN SERVERHANDLER
+            System.out.println("Getting a new sender..");
+            Connection newSender = connections.get(0);
+            newSender.setStatus(ClientStatus.SENDER);
+     //       getSenderAudio(newSender);// TODO let the new sender know and open a new UDP
+        } else {
+            System.out.println("No other Client is connected so far. Listening on port 2046...");
         }
     }
 
@@ -124,11 +128,6 @@ public class UDPServerImpl implements UDPServer {
      */
     @Override
     public void multicastAudio(byte[] data) throws IOException {
-            /*
-            System.out.println("Server will soon stream audio to receiver client " + socket.getRemoteSocketAddress());
-            final int MULTICAST_PORT = 3332;
-            final String GROUP_INETADDRESS = "230.0.0.1";
-            */
         //       while (true) {
         try {
             //      byte[] chunk = data;
@@ -146,5 +145,15 @@ public class UDPServerImpl implements UDPServer {
         //    DatagramPacket packet = new DatagramPacket(buffer, buffer.length)
     }
 //   }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return a List, maybe empty, of active Connections.
+     */
+    @Override
+    public List<Connection> getList() {
+        return connections;
+    }
 
 }

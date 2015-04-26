@@ -18,15 +18,13 @@ import java.util.concurrent.Executors;
 public class ServerImpl implements Server {
     private ExecutorService threadsPool;
     private IdGenerator idGenerator;
-    private List<Connection> connections;
     private Runnable udpServer;
 
 
     public ServerImpl() throws IOException {
         threadsPool = Executors.newFixedThreadPool(10);
         idGenerator = new IdGeneratorImpl();
-        connections = new LinkedList<>();
-        udpServer = new UDPServerImpl(this);
+        udpServer = new UDPServerImpl();
     }
 
     /**
@@ -67,17 +65,6 @@ public class ServerImpl implements Server {
             }
         }
     }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return a List, maybe empty, of active Connections.
-     */
-    @Override
-    public List<Connection> getList() {
-        return connections;
-    }
-
 
     /**
      * {@inheritDoc}
