@@ -5,8 +5,7 @@ import java.util.List;
 
 /**
  * Class which deals with UDP Connection with a Client (identified as a {@see Connection} instance).
- * Its Runnable thread should be launched by the main {@see Server}, and the Server itself should reference
- * itself at construction time in order to give access to its getter methods.
+ * Its Runnable thread should be launched by the main {@see Server}.
  *
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */

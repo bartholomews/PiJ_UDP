@@ -1,16 +1,15 @@
 package main;
 
+import java.io.IOException;
+
 /**
  * Runnable class which manage one Client requests as a new thread. A request is sent by the main {@see Server}
  * which should reference itself at construction time, in order to give access to its getter methods.
  * The ServerHandler should also be provided of the socket connected with the Client.
- * The runnable thread will
  *
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public interface ServerHandler extends Runnable {
-    // TODO is it good practice to extends Runnable in an interface? I'm not sure
-
     /**
      * Get the socket provided by the caller class ({@see Server} at construction time and wraps it
      * in a {@see Connection} instance together with the Client unique-ID and {@see CientStatus}.
@@ -37,5 +36,15 @@ public interface ServerHandler extends Runnable {
      */
     public Connection createConnection();
 
+    /**
+     * Close a connection which doesn't respond with the server. This method should be called
+     * after a failed attempt to communicate via TCP. The connection should be removed from
+     * the server's connections list and, if that was a SENDER connection, a new sender should be
+     * selected.
+     *
+     * @param connection the connection to be closed
+     * @throws IOException for an error during network communication
+     */
+    public void closeConnection(Connection connection) throws IOException;
 
 }
