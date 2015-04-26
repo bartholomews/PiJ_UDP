@@ -16,26 +16,16 @@ import java.util.List;
 public class UDPServerImpl implements UDPServer {
     private List<Connection> connections;
     private int FIVE_SECONDS = 5000;
-//    private BufferedReader in = null;
-//    private boolean moreData = true;
-//    private File audioFile;
     private DatagramSocket socketToMulticast;
     private InetAddress group;
-    private byte[] data;    // TO SORT OUT
+    private byte[] data;
+    private boolean needNewSender;
 
     public UDPServerImpl() throws IOException {
         connections = new LinkedList<>();
         socketToMulticast = new MulticastSocket(3332);
         group = InetAddress.getByName("230.0.0.1");
-
-     //   audioFile = file;
-        /*
-        try {
-            in = new BufferedReader(new FileReader(audioFile));
-        } catch (FileNotFoundException ex) {
-            System.out.println("Cannot open file");
-        }
-        */
+        needNewSender = false;
     }
 
     /**
@@ -45,8 +35,7 @@ public class UDPServerImpl implements UDPServer {
     public void run() {
         while (true) {
             try {
-                // SYNCHRONIZED?
-                while (connections.size() < 2 || data == null) {
+                while (connections.size() < 2 || data == null || needNewSender) {
                     Thread.sleep(1000);
                 }
                 multicastAudio(data);
@@ -59,17 +48,17 @@ public class UDPServerImpl implements UDPServer {
         }
     }
 
-    //    AudioInputStream audioIn = AudioSystem.getAudioInputStream(audioFile);
-
     /**
+     * {@inheritDoc}
      *
-     *
-     * @param connection
-     * @throws IOException
+     * @param connection the Connection with the SENDER Client
+     * @throws IOException for an error during connection. If the error happens during the UDP transmission
+     * the method will return, and the caller class should at that point deal with removing it from the
+     * list and getting a new sender.
      */
     @Override
     public void getSenderAudio(Connection connection) throws IOException {
-        while (true) {
+        while (!needNewSender) {
             try (DatagramSocket senderSocket = new DatagramSocket()) {
                 InetAddress address = connection.getSocket().getInetAddress();
                 // send request
@@ -84,63 +73,32 @@ public class UDPServerImpl implements UDPServer {
                 System.out.println("Packet received from " + connection.getID() + " (" + connection.getStatus() + ")");
                 data = buffer;
             } catch (IOException ex) {
-                getNewSender(connection);
                 return;
             }
         }
     }
 
-    public synchronized void getNewSender(Connection connection) throws IOException {
-        System.out.println(connection.getID() + " (" + connection.getStatus() + ") disconnected");
-        // SYNCHRONIZED
-        connections.remove(connection);
-        connection.getSocket().close();
-        if (!connections.isEmpty()) {
-            // THIS SHOULD BE SYNCHRONIZED WITH CREATECONNECTION() IN SERVERHANDLER
-            System.out.println("Getting a new sender..");
-            Connection newSender = connections.get(0);
-            newSender.setStatus(ClientStatus.SENDER);
-     //       getSenderAudio(newSender);// TODO let the new sender know and open a new UDP
-        } else {
-            System.out.println("No other Client is connected so far. Listening on port 2046...");
-        }
-    }
-
-    /**
-     * Return the packed of byte[] received from the SENDER Client via UDP;
-     * that is, after the method getSenderAudio(Connection).
-     *
-     * @return the last packet received from the SENDER Client
-     */
-    public byte[] getData() {
-        return data;
-    }
-
     /**
      * {@inheritDoc}
      *
-     * @param data
-     * @throws java.io.IOException
+     * @param data the data to be sent via multicasting
+     * @throws IOException for an error during connection.
      */
     @Override
     public void multicastAudio(byte[] data) throws IOException {
-        //       while (true) {
-        try {
-            //      byte[] chunk = data;
-            DatagramPacket packet = new DatagramPacket(data, data.length, group, 4446);
-            socketToMulticast.send(packet);
-            System.out.println(packet.toString() + "sent via multicasting");
-            Thread.sleep(3000);
-        } catch (InterruptedException ex) {
-            //
-        } catch (IOException ex) {
-            System.out.println("There has been an error while multicasting");
-            // TODO should set a timer and catch the IOException with new getSenderAudio() ?
+        while (!needNewSender) {
+            try {
+                DatagramPacket packet = new DatagramPacket(data, data.length, group, 4446);
+                socketToMulticast.send(packet);
+                System.out.println(packet.toString() + "sent via multicasting");
+                Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+                //
+            } catch (IOException ex) {
+                System.out.println("There has been an error while multicasting");
+            }
         }
-
-        //    DatagramPacket packet = new DatagramPacket(buffer, buffer.length)
     }
-//   }
 
     /**
      * {@inheritDoc}
@@ -150,6 +108,15 @@ public class UDPServerImpl implements UDPServer {
     @Override
     public List<Connection> getList() {
         return connections;
+    }
+
+    /**
+     * Change the status of the boolean flag which checks if a SENDER client is currently selected.
+     *
+     * @param flag true if a SENDER client is not assigned, false otherwise
+     */
+    public void needNewSender(boolean flag) {
+        needNewSender = flag;
     }
 
 }

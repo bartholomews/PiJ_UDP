@@ -11,8 +11,6 @@ import java.util.List;
  * @author federico.bartolomei (BBK-PiJ-2014-21)
  */
 public interface UDPServer extends Runnable {
-// TODO best practice: extending Runnable and overriding run() in this interface or implementing in UDPServerImpl?
-
     /**
      * Periodically check the Server's list of active Connection. If at least one RECEIVER client is in the list,
      * it will start multicasting the audio data which should be already being streamed by the SENDER client.
@@ -37,7 +35,6 @@ public interface UDPServer extends Runnable {
     /**
      * Send packets of data (retrieved by the byte[] given as parameter) via multicast to any RECEIVER Client
      * connected to its InetAddress group and port.
-     * TODO IOException to catch a timeout (i.e. the SENDER is disconnected?)
      *
      * @param data the data to be sent via multicasting
      * @throws IOException for an error during connection.
