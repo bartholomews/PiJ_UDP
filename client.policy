@@ -1,3 +1,5 @@
+// TODO more specific permissions
+
 grant {
 	permission java.security.AllPermission;
 };
