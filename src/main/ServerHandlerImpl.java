@@ -27,8 +27,8 @@ public class ServerHandlerImpl implements ServerHandler {
     public void run() {
         System.out.println("From THREAD POOL: Connected to " + socket.getRemoteSocketAddress());
         try {
-            while(true) {
-                Connection connection = createConnection();
+            Connection connection = createConnection();
+            while (!connection.getSocket().isClosed()) {
                 System.out.println("SIZE: " + server.getUdpServer().getList().size());
                 Future<Boolean> task = server.getPool().submit(new WorkerThreadImpl(connection));
                 while (!task.isDone()) {

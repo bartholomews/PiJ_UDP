@@ -85,6 +85,7 @@ public class UDPServerImpl implements UDPServer {
                 data = buffer;
             } catch (IOException ex) {
                 getNewSender(connection);
+                return;
             }
         }
     }
