@@ -11,7 +11,6 @@ import java.util.concurrent.Future;
  */
 public class ServerHandlerImpl implements ServerHandler {
     private Server server;
-    private UDPServerImpl udpServer;
     private Socket socket;
  //   private boolean moreData;
 
@@ -26,21 +25,21 @@ public class ServerHandlerImpl implements ServerHandler {
      */
     @Override
     public void run() {
-        udpServer = server.getUdpServer();
         System.out.println("From THREAD POOL: Connected to " + socket.getRemoteSocketAddress());
         try {
-            Connection connection = createConnection();
-            Future<Boolean> task = server.getPool().submit(new WorkerThreadImpl(connection));
-            while (!task.isDone()) {
-                Thread.sleep(500); // wait for the client to get the id and client_status
-                //      listenForRequests();    // start a listener for possible further requests?
-                // or keep workerthreadimpl alive?
-            }
-            if (connection.isSender()) {
-                System.out.println("Sending audio request to " + connection.getStatus());
-                udpServer.getSenderAudio(connection); // TODO
-            } else {
-                // UDPServer should always be ready to multicast if possible
+            while(true) {
+                Connection connection = createConnection();
+                System.out.println("SIZE: " + server.getUdpServer().getList().size());
+                Future<Boolean> task = server.getPool().submit(new WorkerThreadImpl(connection));
+                while (!task.isDone()) {
+                    Thread.sleep(500); // wait for the client to get the id and client_status
+                }
+                if (connection.isSender()) {
+                    System.out.println("Sending audio request to " + connection.getStatus());
+                    server.getUdpServer().getSenderAudio(connection);
+                }   // else
+                // UDPServer should always be ready to multicast if possible;
+                // this thread will go back to submit its task that is getting further requests from the client
             }
         } catch (IOException ex) {
             System.out.println("There has been an error during connection");
@@ -59,9 +58,9 @@ public class ServerHandlerImpl implements ServerHandler {
      */
     @Override
     public synchronized Connection createConnection() {
-        ClientStatus status = server.getList().isEmpty() ? ClientStatus.SENDER : ClientStatus.RECEIVER;
+        ClientStatus status = server.getUdpServer().getList().isEmpty() ? ClientStatus.SENDER : ClientStatus.RECEIVER;
         Connection connection = new ConnectionImpl(socket, server.generateID(), status);
-        server.getList().add(connection);
+        server.getUdpServer().getList().add(connection);
         return connection;
     }
 
