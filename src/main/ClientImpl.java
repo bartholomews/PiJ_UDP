@@ -163,7 +163,7 @@ public class ClientImpl implements Client {
     }
 
     public void sendAudioChunks(byte[] audioBytes) {
-        int n = 0; // just for testing;
+        int count = 0; // just for testing;
         try (DatagramSocket senderSocket = new DatagramSocket(3333)) {
             // BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("just-a-test".getBytes())))
 
@@ -184,8 +184,8 @@ public class ClientImpl implements Client {
                 int port = serverPacket.getPort();
                 serverPacket = new DatagramPacket(buffer, buffer.length, address, port);
                 senderSocket.send(serverPacket);
-                System.out.println("Packet " + n + " sent.");
-                Thread.sleep(2000); // avoid stackoverflow, testing
+                System.out.println("Packet " + ++count + " sent.");
+                Thread.sleep(500); // avoid stackoverflow, testing
   //          }
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -294,9 +294,6 @@ public class ClientImpl implements Client {
             ex.printStackTrace();
         }
     }
-
-
-
 
     private AudioFormat getAudioFormat() {
         float sampleRate = 16000.0F;
