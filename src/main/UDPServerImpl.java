@@ -70,23 +70,18 @@ public class UDPServerImpl implements UDPServer {
     @Override
     public void getSenderAudio(Connection connection) throws IOException {
         while (true) {
-            System.out.println("Server requesting audio data from sender client " + connection.getID());
-            // get a datagram socket (try-with-resources)
             try (DatagramSocket senderSocket = new DatagramSocket()) {
                 InetAddress address = connection.getSocket().getInetAddress();
                 // send request
                 byte[] buffer = new byte[2048];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 3333);
                 senderSocket.send(packet);
-                System.out.println("Request sent.");
-                senderSocket.setSoTimeout(FIVE_SECONDS); // 5 sec timeout before closing the connection with the client
                 // get response
                 packet = new DatagramPacket(buffer, buffer.length);
-                // ByteArrayInputStream byteIn = new ByteArrayInputStream(received.getData());
+                senderSocket.setSoTimeout(FIVE_SECONDS); // 5 sec timeout before closing the connection with the client
                 senderSocket.receive(packet);
                 // display response
-                String received = new String(packet.getData(), 0, packet.getLength());
-                System.out.println("Packet received: " + received);
+                System.out.println("Packet received from " + connection.getID() + " (" + connection.getStatus() + ")");
                 data = buffer;
             } catch (IOException ex) {
                 getNewSender(connection);
