@@ -5,6 +5,10 @@ import java.io.*;
 import java.net.*;
 import java.security.AccessControlException;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * // TODO so far when a sender is disconnected, the receivers are blocked waiting to get the multicast,
@@ -18,19 +22,25 @@ public class ClientImpl implements Client {
     private final String MULTICAST_INETADDRESS = "230.0.0.1";
     private File audioFile;
     private final AudioFormat format;
+    private Socket socket;
+    private ClientStatus status;
+    private ScheduledExecutorService listener;
+    private DatagramSocket senderSocket;
 
     public ClientImpl(String audioPath) {
+        listener = Executors.newSingleThreadScheduledExecutor();
         audioFile = new File(audioPath);
         format = new AudioFormat(44100, 16, 1, true, false);    // otherwise use getAudioFormat() at the bottom
     }
 
     // for testing
     public ClientImpl() {
+        listener = Executors.newSingleThreadScheduledExecutor();
         audioFile = new File("../Low-Conga-1.wav");
-        if(!audioFile.exists()) {
+        if (!audioFile.exists()) {
             System.out.println(audioFile + " doesn't exist");
         }
-        format = getAudioFormat();
+        format = new AudioFormat(44100, 16, 1, true, false);    // otherwise use getAudioFormat() at the bottom
     }
 
     /**
@@ -44,20 +54,34 @@ public class ClientImpl implements Client {
     @Override
     public void connect(String hostname, int port) throws IOException {
         try {
-            Socket socket = new Socket(hostname, port);
-            System.out.println("From " + socket.getRemoteSocketAddress() + ": " + getString(socket));
-            getID(socket);
-            ClientStatus status = getStatus(socket);
+            socket = new Socket(hostname, port);
+            init();
+        } catch (IOException ex) {
+//            senderSocket.close();
+//            socket.close();
+            System.out.println("Cannot establish a connection with the Server");
+            ex.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    public void init() throws IOException {
+        try {
+            Future<ClientStatus> task = listener.submit(new TCPClient());
+            //             listener.schedule(new TCPClient(), 3, TimeUnit.SECONDS);
+            while (!task.isDone()) {
+                Thread.sleep(500);
+            }
             System.out.println("Status received: " + status.name());
-            // THIS SHOULD BE A WHILE LOOP, CLIENTS SHOULD HAVE A QUICK CHECK BEFORE EVERY PACKET
-            // TO SEE IF THEIR CLIENT_STATUS HAS CHANGED
             if (status == ClientStatus.SENDER) {
                 sendAudio();
             } else {
-                getAudioChunks(); // TODO
+                getAudioChunks();
             }
+        } catch (InterruptedException ex) {
+            //
         } catch (IOException ex) {
-            throw new IOException("Cannot establish a connection with the Server");
+            throw new IOException("Error while connecting via UDP");
         }
     }
 
@@ -132,19 +156,22 @@ public class ClientImpl implements Client {
     }
 
     public void sendAudio() {
-        int totalFramesRead = 0;
         try {
-            AudioInputStream audioIn = AudioSystem.getAudioInputStream(audioFile);
-            int bytesPerFrame = audioIn.getFormat().getFrameSize();
-            if (bytesPerFrame == AudioSystem.NOT_SPECIFIED) {
-                // some audio formats may have unspecified frame size
-                // in that case we may read any amount of bytes
-                bytesPerFrame = 1;
-            }
-            // set buffer size
-            int bufferSize = 2048 * bytesPerFrame;
-            byte[] audioBytes = new byte[bufferSize];
-            try {
+            senderSocket = new DatagramSocket(3333);
+            while (true) {
+                int count = 0;
+                int totalFramesRead = 0;
+                AudioInputStream audioIn = AudioSystem.getAudioInputStream(audioFile);
+                int bytesPerFrame = audioIn.getFormat().getFrameSize();
+                if (bytesPerFrame == AudioSystem.NOT_SPECIFIED) {
+                    // some audio formats may have unspecified frame size
+                    // in that case we may read any amount of bytes
+                    bytesPerFrame = 1;
+                }
+                // set buffer size
+                int bufferSize = 2048 * bytesPerFrame;
+                byte[] audioBytes = new byte[bufferSize];
+
                 int numBytesRead = 0;
                 int numFramesRead = 0;
                 // try to read numBytes from the file
@@ -152,43 +179,35 @@ public class ClientImpl implements Client {
                     // calculate the number of frames actually read
                     numFramesRead = numBytesRead / bytesPerFrame;
                     totalFramesRead += numFramesRead;
+
                     sendAudioChunks(audioBytes);
+
+                    System.out.println("Packet " + ++count + " sent.");
                 }
-            } catch (Exception ex) {
-                System.out.println("Error while packing audio");
             }
-        } catch (Exception ex) {
-            System.out.println("Error while preparing to pack audio");
+        } catch(UnsupportedAudioFileException ex) {
+            System.out.println("Unsupported audio");
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            System.out.println("Error while packing audio");
+            ex.printStackTrace();
         }
     }
 
-    public void sendAudioChunks(byte[] audioBytes) {
-        int count = 0; // just for testing;
-        try (DatagramSocket senderSocket = new DatagramSocket(3333)) {
-            // BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("just-a-test".getBytes())))
+    public void sendAudioChunks(byte[] audioBytes) throws IOException {
+        System.out.println("Client ready to send next audio chunk...");
 
-            // boolean moreDataChunks = true;
-            // while(moreDataChunks){
-     //       while (true) {
-                System.out.println("Client ready to send next audio chunk...");
+        // get the request from the server
+        DatagramPacket serverPacket = new DatagramPacket(audioBytes, audioBytes.length);
+        senderSocket.receive(serverPacket);
 
-           //     byte[] buffer = new byte[2048];
-                byte[] buffer = audioBytes;
-
-                // get the request from the server
-                DatagramPacket serverPacket = new DatagramPacket(buffer, buffer.length);
-                senderSocket.receive(serverPacket);
-
-                // send the audio data to the server
-                InetAddress address = serverPacket.getAddress();
-                int port = serverPacket.getPort();
-                serverPacket = new DatagramPacket(buffer, buffer.length, address, port);
-                senderSocket.send(serverPacket);
-                System.out.println("Packet " + ++count + " sent.");
-                Thread.sleep(500); // avoid stackoverflow, testing
-  //          }
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        // send the audio data to the server
+        InetAddress address = serverPacket.getAddress();
+        int port = serverPacket.getPort();
+        serverPacket = new DatagramPacket(audioBytes, audioBytes.length, address, port);
+        senderSocket.send(serverPacket);
+        try {
+            Thread.sleep(500); // avoid stackoverflow, testing
         } catch (InterruptedException ex) {
             //
         }
@@ -201,53 +220,27 @@ public class ClientImpl implements Client {
         if (securityManager == null) {
             System.setSecurityManager(new SecurityManager());
         }
-        while (true) {
-            try {
-                MulticastSocket multicastSocket = new MulticastSocket(MULTICAST_PORT);
-                InetAddress group = InetAddress.getByName(MULTICAST_INETADDRESS);
-                multicastSocket.joinGroup(group);
-                System.out.println("joined group");
+        try {
+            MulticastSocket multicastSocket = new MulticastSocket(MULTICAST_PORT);
+            InetAddress group = InetAddress.getByName(MULTICAST_INETADDRESS);
+            multicastSocket.joinGroup(group);
+            System.out.println("joined group");
 
+            while (!status.equals(ClientStatus.SENDER)) {
                 DatagramPacket packet;
-
-                //  while(true) {   // while(SOMETHING ELSE?)
 
                 byte[] buffer = new byte[2048];
                 packet = new DatagramPacket(buffer, buffer.length);
                 multicastSocket.receive(packet);
 
-        //        String received = new String(packet.getData(), 0, packet.getLength());
-        //        System.out.println("Received via multicasting: " + received);
-
-            } catch (AccessControlException ex) {
-                ex.printStackTrace();
-                System.out.println("Please reboot the Client with a security.policy in runtime configuration.");
-                System.exit(1);
-            } catch (IOException ex) {
-                ex.printStackTrace();
+                play(packet);
             }
-        }
-    }
-
-
-
-
-    public void openPacketToAudioStream(DatagramPacket packet) {
-        try {
-            byte[] audioBytes = packet.getData();
-            ByteArrayInputStream bytesIn = new ByteArrayInputStream(audioBytes);
-            AudioInputStream audioIn = new AudioInputStream(bytesIn, format, packet.getLength());
-            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
-            SourceDataLine audioLine = (SourceDataLine) AudioSystem.getLine(info);
-
-            audioLine.open(format);
-            audioLine.start();
-            audioLine.write(audioBytes, 0, audioBytes.length);
-            audioLine.drain();
-            audioLine.close();
-
-        } catch (Exception ex) {
-            System.out.println("Some error during audio streaming");
+        } catch (AccessControlException ex) {
+            ex.printStackTrace();
+            System.out.println("Please reboot the Client with a security.policy in runtime configuration.");
+            System.exit(1);
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -295,13 +288,20 @@ public class ClientImpl implements Client {
         }
     }
 
-    private AudioFormat getAudioFormat() {
-        float sampleRate = 16000.0F;
-        int sampleInbits = 16;
-        int channels = 1;
-        boolean signed = true;
-        boolean bigEndian = false;
-        return new AudioFormat(sampleRate, sampleInbits, channels, signed, bigEndian);
+    public class TCPClient implements Callable<ClientStatus> {
+
+        public ClientStatus call() throws IOException {
+            try {
+                socket.setSoTimeout(5000);
+                System.out.println("From server: " + getString(socket));
+                getID(socket);
+                status = getStatus(socket);
+                return status;
+            } catch (IOException ex) {
+                throw new IOException("Error while communicating via TCP");
+            }
+        }
+
     }
 
 }
