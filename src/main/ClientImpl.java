@@ -1,5 +1,6 @@
 package main;
 
+import javax.sound.sampled.*;
 import java.io.*;
 import java.net.*;
 import java.security.AccessControlException;
@@ -15,6 +16,22 @@ import java.util.UUID;
 public class ClientImpl implements Client {
     private final int MULTICAST_PORT = 4446;
     private final String MULTICAST_INETADDRESS = "230.0.0.1";
+    private File audioFile;
+    private final AudioFormat format;
+
+    public ClientImpl(String audioPath) {
+        audioFile = new File(audioPath);
+        format = new AudioFormat(44100, 16, 1, true, false);    // otherwise use getAudioFormat() at the bottom
+    }
+
+    // for testing
+    public ClientImpl() {
+        audioFile = new File("../Low-Conga-1.wav");
+        if(!audioFile.exists()) {
+            System.out.println(audioFile + " doesn't exist");
+        }
+        format = getAudioFormat();
+    }
 
     /**
      * {@inheritDoc}
@@ -35,7 +52,7 @@ public class ClientImpl implements Client {
             // THIS SHOULD BE A WHILE LOOP, CLIENTS SHOULD HAVE A QUICK CHECK BEFORE EVERY PACKET
             // TO SEE IF THEIR CLIENT_STATUS HAS CHANGED
             if (status == ClientStatus.SENDER) {
-                sendAudioChunks();
+                sendAudio();
             } else {
                 getAudioChunks(); // TODO
             }
@@ -114,25 +131,53 @@ public class ClientImpl implements Client {
         return id;
     }
 
-    public void sendAudioChunks() {
+    public void sendAudio() {
+        int totalFramesRead = 0;
+        try {
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(audioFile);
+            int bytesPerFrame = audioIn.getFormat().getFrameSize();
+            if (bytesPerFrame == AudioSystem.NOT_SPECIFIED) {
+                // some audio formats may have unspecified frame size
+                // in that case we may read any amount of bytes
+                bytesPerFrame = 1;
+            }
+            // set buffer size
+            int bufferSize = 2048 * bytesPerFrame;
+            byte[] audioBytes = new byte[bufferSize];
+            try {
+                int numBytesRead = 0;
+                int numFramesRead = 0;
+                // try to read numBytes from the file
+                while ((numBytesRead = audioIn.read(audioBytes)) != -1) {
+                    // calculate the number of frames actually read
+                    numFramesRead = numBytesRead / bytesPerFrame;
+                    totalFramesRead += numFramesRead;
+                    sendAudioChunks(audioBytes);
+                }
+            } catch (Exception ex) {
+                System.out.println("Error while packing audio");
+            }
+        } catch (Exception ex) {
+            System.out.println("Error while preparing to pack audio");
+        }
+    }
+
+    public void sendAudioChunks(byte[] audioBytes) {
         int n = 0; // just for testing;
         try (DatagramSocket senderSocket = new DatagramSocket(3333)) {
             // BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("just-a-test".getBytes())))
 
             // boolean moreDataChunks = true;
             // while(moreDataChunks){
-            while (true) {
+     //       while (true) {
                 System.out.println("Client ready to send next audio chunk...");
-                byte[] buffer = new byte[1024];
+
+           //     byte[] buffer = new byte[2048];
+                byte[] buffer = audioBytes;
+
                 // get the request from the server
                 DatagramPacket serverPacket = new DatagramPacket(buffer, buffer.length);
                 senderSocket.receive(serverPacket);
-                // pack the audio data
-                buffer = ("PACKET " + ++n).getBytes();
-
-                // if(in == null) {
-                // moreDataChunks = false;
-                // }
 
                 // send the audio data to the server
                 InetAddress address = serverPacket.getAddress();
@@ -141,7 +186,7 @@ public class ClientImpl implements Client {
                 senderSocket.send(serverPacket);
                 System.out.println("Packet " + n + " sent.");
                 Thread.sleep(2000); // avoid stackoverflow, testing
-            }
+  //          }
         } catch (IOException ex) {
             ex.printStackTrace();
         } catch (InterruptedException ex) {
@@ -167,11 +212,12 @@ public class ClientImpl implements Client {
 
                 //  while(true) {   // while(SOMETHING ELSE?)
 
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[2048];
                 packet = new DatagramPacket(buffer, buffer.length);
                 multicastSocket.receive(packet);
-                String received = new String(packet.getData(), 0, packet.getLength());
-                System.out.println("Received via multicasting: " + received);
+
+        //        String received = new String(packet.getData(), 0, packet.getLength());
+        //        System.out.println("Received via multicasting: " + received);
 
             } catch (AccessControlException ex) {
                 ex.printStackTrace();
@@ -181,6 +227,84 @@ public class ClientImpl implements Client {
                 ex.printStackTrace();
             }
         }
+    }
+
+
+
+
+    public void openPacketToAudioStream(DatagramPacket packet) {
+        try {
+            byte[] audioBytes = packet.getData();
+            ByteArrayInputStream bytesIn = new ByteArrayInputStream(audioBytes);
+            AudioInputStream audioIn = new AudioInputStream(bytesIn, format, packet.getLength());
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            SourceDataLine audioLine = (SourceDataLine) AudioSystem.getLine(info);
+
+            audioLine.open(format);
+            audioLine.start();
+            audioLine.write(audioBytes, 0, audioBytes.length);
+            audioLine.drain();
+            audioLine.close();
+
+        } catch (Exception ex) {
+            System.out.println("Some error during audio streaming");
+        }
+    }
+
+    /**
+     * TODO
+     * Open the AudioInputStream
+     *
+     * @param packet
+     */
+    public void play(DatagramPacket packet) {
+   //     File audioFile = new File(audioPath);
+
+        try {
+
+       //     AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(audioFile);
+            AudioInputStream audioIn = new AudioInputStream(new ByteArrayInputStream(packet.getData()), format, packet.getLength());
+      //      AudioFormat format = audioIn.getFormat();
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            SourceDataLine audioLine = (SourceDataLine) AudioSystem.getLine(info);
+            audioLine.open(format);
+            audioLine.start();
+            System.out.println("Playback started");
+
+            byte[] buffer = new byte[1024];
+            int bytesRead = -1;
+            while((bytesRead = audioIn.read(buffer)) != -1) {
+                audioLine.write(buffer, 0, bytesRead);
+            }
+
+            audioLine.drain();
+            audioLine.close();
+            audioIn.close();
+
+            System.out.println("Playback completed.");
+
+    //    } catch (UnsupportedAudioFileException ex) {
+    //        System.out.println("Audio file not supported");
+    //        ex.printStackTrace();
+        } catch(LineUnavailableException ex) {
+            System.out.println("Audio line unavailable");
+            ex.printStackTrace();
+        } catch(IOException ex) {
+            System.out.println("There has been an error while playing the audio file");
+            ex.printStackTrace();
+        }
+    }
+
+
+
+
+    private AudioFormat getAudioFormat() {
+        float sampleRate = 16000.0F;
+        int sampleInbits = 16;
+        int channels = 1;
+        boolean signed = true;
+        boolean bigEndian = false;
+        return new AudioFormat(sampleRate, sampleInbits, channels, signed, bigEndian);
     }
 
 }
