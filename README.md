@@ -1,5 +1,5 @@
 # UDP
-BBK Programming in Java 2014 - Assignment 5
+BBK Programming in Java 2014/15 - Assignment 5
 
 It is necessary to run the Client(s) with security.policy in order to make the multicastSocket work
 (i.e. being able to receive packets).
